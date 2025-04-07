@@ -4,6 +4,7 @@
  */
 
 import { toast } from '@/hooks/use-toast';
+import { apiService } from './api-service';
 
 export interface MarketAsset {
   id: string;
@@ -49,6 +50,7 @@ class MarketDataService {
   
   private marketAssetsCache: Record<string, MarketAsset> = {};
   private marketOverviewCache: MarketOverview | null = null;
+  private coinUuidMap: Record<string, string> = {}; // Maps symbols to UUIDs
   private lastFetchTime: Record<string, number> = {};
   private refreshInterval: number | null = null;
 
@@ -68,6 +70,7 @@ class MarketDataService {
           const data = JSON.parse(marketDataJson);
           this.marketAssetsCache = data.assets || {};
           this.lastFetchTime = data.lastFetchTime || {};
+          this.coinUuidMap = data.coinUuidMap || {};
         }
 
         const overviewJson = localStorage.getItem(this.MARKET_OVERVIEW_KEY);
@@ -88,7 +91,8 @@ class MarketDataService {
       try {
         localStorage.setItem(this.MARKET_DATA_KEY, JSON.stringify({
           assets: this.marketAssetsCache,
-          lastFetchTime: this.lastFetchTime
+          lastFetchTime: this.lastFetchTime,
+          coinUuidMap: this.coinUuidMap
         }));
 
         if (this.marketOverviewCache) {
@@ -120,10 +124,18 @@ class MarketDataService {
    */
   private async refreshMarketData(): Promise<void> {
     try {
-      await Promise.all([
-        this.getMarketAssets(this.DEFAULT_LIMIT, true),
-        this.getMarketOverview(true)
-      ]);
+      const apiUsage = apiService.getUsageStats();
+      
+      // Only refresh if we're not close to hitting rate limits
+      if (apiUsage.lastMinute < apiUsage.minuteLimit * 0.8 && 
+          apiUsage.lastMonth < apiUsage.monthlyLimit * 0.9) {
+        await Promise.all([
+          this.getMarketAssets(this.DEFAULT_LIMIT, true),
+          this.getMarketOverview(true)
+        ]);
+      } else {
+        console.log('Skipping auto-refresh due to API rate limit concerns');
+      }
     } catch (error) {
       console.error('Failed to refresh market data:', error);
     }
@@ -151,12 +163,34 @@ class MarketDataService {
     }
 
     try {
-      // In a real app, this would be a fetch to a crypto API
-      const assets = await this.fetchMockMarketAssets(limit);
+      // Fetch from real API
+      const coinsData = await apiService.getCoins(limit);
+      const assets: MarketAsset[] = [];
       
-      // Update cache
-      for (const asset of assets) {
-        this.marketAssetsCache[asset.symbol] = asset;
+      if (coinsData.coins && Array.isArray(coinsData.coins)) {
+        for (const coin of coinsData.coins) {
+          const asset: MarketAsset = {
+            id: coin.uuid,
+            symbol: coin.symbol,
+            name: coin.name,
+            price: parseFloat(coin.price),
+            marketCap: parseFloat(coin.marketCap),
+            volume24h: parseFloat(coin['24hVolume']),
+            changePercent24h: parseFloat(coin.change),
+            changePercent7d: 0, // Not directly provided in this endpoint
+            totalSupply: parseFloat(coin.supply.total || 0),
+            circulatingSupply: parseFloat(coin.supply.circulating || 0),
+            lastUpdated: now
+          };
+          
+          assets.push(asset);
+          
+          // Update cache
+          this.marketAssetsCache[asset.symbol] = asset;
+          
+          // Keep track of UUID for symbol
+          this.coinUuidMap[asset.symbol] = asset.id;
+        }
       }
 
       this.lastFetchTime[cacheKey] = now;
@@ -197,14 +231,75 @@ class MarketDataService {
     }
 
     try {
-      // In a real app, this would fetch from a crypto API
-      const asset = await this.fetchMockAssetDetail(symbol);
-      if (asset) {
+      let uuid = this.coinUuidMap[symbol];
+      
+      // If we don't have the UUID, try to find it
+      if (!uuid) {
+        // Try to get it from search
+        const searchResult = await apiService.searchCoins(symbol);
+        if (searchResult.coins && searchResult.coins.length > 0) {
+          const exactMatch = searchResult.coins.find(
+            (c: any) => c.symbol.toUpperCase() === symbol.toUpperCase()
+          );
+          
+          if (exactMatch) {
+            uuid = exactMatch.uuid;
+            this.coinUuidMap[symbol] = uuid;
+          }
+        }
+        
+        // If still no UUID, try getting top coins first
+        if (!uuid) {
+          await this.getMarketAssets(100);
+          uuid = this.coinUuidMap[symbol];
+          
+          if (!uuid) {
+            return null; // Couldn't find this symbol
+          }
+        }
+      }
+      
+      // Now get the detailed data
+      const coinData = await apiService.getCoin(uuid);
+      
+      if (coinData && coinData.coin) {
+        const coin = coinData.coin;
+        
+        // Get 7d change from history if available
+        let change7d = 0;
+        try {
+          const history = await apiService.getCoinHistory(uuid, '7d');
+          if (history && history.history && history.history.length > 0) {
+            const oldestPrice = parseFloat(history.history[0].price);
+            const newestPrice = parseFloat(coin.price);
+            change7d = ((newestPrice - oldestPrice) / oldestPrice) * 100;
+          }
+        } catch (historyError) {
+          console.error('Failed to fetch coin history:', historyError);
+        }
+        
+        const asset: MarketAsset = {
+          id: coin.uuid,
+          symbol: coin.symbol,
+          name: coin.name,
+          price: parseFloat(coin.price),
+          marketCap: parseFloat(coin.marketCap),
+          volume24h: parseFloat(coin['24hVolume']),
+          changePercent24h: parseFloat(coin.change),
+          changePercent7d: change7d,
+          totalSupply: parseFloat(coin.supply.total || 0),
+          circulatingSupply: parseFloat(coin.supply.circulating || 0),
+          lastUpdated: now
+        };
+        
         this.marketAssetsCache[asset.symbol] = asset;
         this.lastFetchTime[cacheKey] = now;
         this.saveToCache();
+        
+        return asset;
       }
-      return asset;
+      
+      return null;
     } catch (error) {
       console.error(`Failed to fetch details for ${symbol}:`, error);
       
@@ -229,8 +324,36 @@ class MarketDataService {
     }
 
     try {
-      // In a real app, this would fetch from a crypto API
-      const overview = await this.fetchMockMarketOverview();
+      // Get global stats
+      const statsData = await apiService.getGlobalStats();
+      
+      // Get top coins for gainers/losers
+      const assets = await this.getMarketAssets(50);
+      
+      // Sort for gainers and losers
+      const sortedByChange = [...assets].sort(
+        (a, b) => b.changePercent24h - a.changePercent24h
+      );
+      
+      const topGainers = sortedByChange.slice(0, 5);
+      const topLosers = sortedByChange.slice(-5).reverse();
+      
+      // Create market trends based on categories
+      // In a real implementation, you'd get this from an API or analyze the market
+      const trends: MarketTrend[] = this.generateMarketTrends(assets);
+      
+      const overview: MarketOverview = {
+        totalMarketCap: parseFloat(statsData.totalMarketCap),
+        totalVolume24h: parseFloat(statsData.total24hVolume),
+        btcDominance: parseFloat(statsData.btcDominance),
+        ethDominance: parseFloat(statsData.btcDominance) * 0.4, // Approximate, not provided directly
+        defiTvl: parseFloat(statsData.totalMarketCap) * 0.08, // Approximate, not provided directly
+        fearGreedIndex: 65, // Not provided by API, would need another source
+        topGainers,
+        topLosers,
+        trends,
+        lastUpdated: now
+      };
       
       this.marketOverviewCache = overview;
       this.saveToCache();
@@ -269,14 +392,41 @@ class MarketDataService {
     }
 
     try {
-      // In a real app, this would use a search API endpoint
-      // For our mock, we'll fetch top assets and filter
-      const assets = await this.getMarketAssets(100);
+      // Use the search API
+      const searchResult = await apiService.searchCoins(query);
       
-      return assets.filter(asset => 
-        asset.symbol.toLowerCase().includes(query) || 
-        asset.name.toLowerCase().includes(query)
-      );
+      const assets: MarketAsset[] = [];
+      const now = Date.now();
+      
+      if (searchResult.coins && Array.isArray(searchResult.coins)) {
+        for (const coin of searchResult.coins) {
+          const asset: MarketAsset = {
+            id: coin.uuid,
+            symbol: coin.symbol,
+            name: coin.name,
+            price: parseFloat(coin.price),
+            marketCap: parseFloat(coin.marketCap || 0),
+            volume24h: parseFloat(coin['24hVolume'] || 0),
+            changePercent24h: parseFloat(coin.change || 0),
+            changePercent7d: 0, // Not provided in search results
+            totalSupply: 0, // Not provided in search results
+            circulatingSupply: 0, // Not provided in search results
+            lastUpdated: now
+          };
+          
+          assets.push(asset);
+          
+          // Update cache
+          this.marketAssetsCache[asset.symbol] = asset;
+          
+          // Keep track of UUID for symbol
+          this.coinUuidMap[asset.symbol] = asset.id;
+        }
+        
+        this.saveToCache();
+      }
+      
+      return assets;
     } catch (error) {
       console.error('Failed to search assets:', error);
       return [];
@@ -297,184 +447,74 @@ class MarketDataService {
   }
 
   /**
-   * Mock implementation of market assets fetch
-   * In a real app, this would call a cryptocurrency API
+   * Generate market trends based on available assets
+   * In a real implementation, this would come from an API or more sophisticated analysis
    */
-  private async fetchMockMarketAssets(limit: number): Promise<MarketAsset[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const mockCryptos = [
-      { symbol: 'BTC', name: 'Bitcoin', basePrice: 65000, marketCap: 1.28e12 },
-      { symbol: 'ETH', name: 'Ethereum', basePrice: 3500, marketCap: 4.2e11 },
-      { symbol: 'BNB', name: 'Binance Coin', basePrice: 580, marketCap: 8.9e10 },
-      { symbol: 'SOL', name: 'Solana', basePrice: 140, marketCap: 6.3e10 },
-      { symbol: 'XRP', name: 'XRP', basePrice: 0.50, marketCap: 5.1e10 },
-      { symbol: 'ADA', name: 'Cardano', basePrice: 0.55, marketCap: 1.9e10 },
-      { symbol: 'DOGE', name: 'Dogecoin', basePrice: 0.12, marketCap: 1.7e10 },
-      { symbol: 'AVAX', name: 'Avalanche', basePrice: 35, marketCap: 1.3e10 },
-      { symbol: 'DOT', name: 'Polkadot', basePrice: 7.2, marketCap: 1.0e10 },
-      { symbol: 'MATIC', name: 'Polygon', basePrice: 0.85, marketCap: 8.1e9 },
-      { symbol: 'LINK', name: 'Chainlink', basePrice: 18, marketCap: 7.8e9 },
-      { symbol: 'UNI', name: 'Uniswap', basePrice: 11, marketCap: 6.5e9 },
-      { symbol: 'SHIB', name: 'Shiba Inu', basePrice: 0.000028, marketCap: 1.6e10 },
-      { symbol: 'LTC', name: 'Litecoin', basePrice: 80, marketCap: 6.0e9 },
-      { symbol: 'ATOM', name: 'Cosmos', basePrice: 9.2, marketCap: 3.5e9 }
-    ];
-
-    const now = Date.now();
-    return mockCryptos.slice(0, limit).map(crypto => {
-      // Add random price fluctuation
-      const changePercent24h = (Math.random() * 20) - 10; // -10% to +10%
-      const price = crypto.basePrice * (1 + changePercent24h / 100);
-      
-      // Generate additional mock data
-      return {
-        id: `${crypto.symbol.toLowerCase()}`,
-        symbol: crypto.symbol,
-        name: crypto.name,
-        price,
-        marketCap: crypto.marketCap,
-        volume24h: crypto.marketCap * (Math.random() * 0.2 + 0.1), // 10-30% of market cap
-        changePercent24h,
-        changePercent7d: (Math.random() * 40) - 20, // -20% to +20%
-        totalSupply: crypto.marketCap / (crypto.basePrice * 0.8),
-        circulatingSupply: crypto.marketCap / crypto.basePrice,
-        lastUpdated: now
-      };
-    });
-  }
-
-  /**
-   * Mock implementation of asset detail fetch
-   */
-  private async fetchMockAssetDetail(symbol: string): Promise<MarketAsset | null> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    const mockCryptos: Record<string, {name: string, basePrice: number, marketCap: number}> = {
-      'BTC': { name: 'Bitcoin', basePrice: 65000, marketCap: 1.28e12 },
-      'ETH': { name: 'Ethereum', basePrice: 3500, marketCap: 4.2e11 },
-      'BNB': { name: 'Binance Coin', basePrice: 580, marketCap: 8.9e10 },
-      'SOL': { name: 'Solana', basePrice: 140, marketCap: 6.3e10 },
-      'XRP': { name: 'XRP', basePrice: 0.50, marketCap: 5.1e10 },
-      'ADA': { name: 'Cardano', basePrice: 0.55, marketCap: 1.9e10 },
-      'DOGE': { name: 'Dogecoin', basePrice: 0.12, marketCap: 1.7e10 },
-      'AVAX': { name: 'Avalanche', basePrice: 35, marketCap: 1.3e10 },
-      'DOT': { name: 'Polkadot', basePrice: 7.2, marketCap: 1.0e10 },
-      'MATIC': { name: 'Polygon', basePrice: 0.85, marketCap: 8.1e9 },
-      'LINK': { name: 'Chainlink', basePrice: 18, marketCap: 7.8e9 },
-      'UNI': { name: 'Uniswap', basePrice: 11, marketCap: 6.5e9 },
-      'SHIB': { name: 'Shiba Inu', basePrice: 0.000028, marketCap: 1.6e10 },
-      'LTC': { name: 'Litecoin', basePrice: 80, marketCap: 6.0e9 },
-      'ATOM': { name: 'Cosmos', basePrice: 9.2, marketCap: 3.5e9 }
-    };
-
-    // If symbol not found in our mock data
-    if (!mockCryptos[symbol]) {
-      return null;
-    }
-
-    const crypto = mockCryptos[symbol];
-    const now = Date.now();
-    
-    // Add random price fluctuation
-    const changePercent24h = (Math.random() * 20) - 10; // -10% to +10%
-    const price = crypto.basePrice * (1 + changePercent24h / 100);
-    
-    return {
-      id: `${symbol.toLowerCase()}`,
-      symbol,
-      name: crypto.name,
-      price,
-      marketCap: crypto.marketCap,
-      volume24h: crypto.marketCap * (Math.random() * 0.2 + 0.1), // 10-30% of market cap
-      changePercent24h,
-      changePercent7d: (Math.random() * 40) - 20, // -20% to +20%
-      totalSupply: crypto.marketCap / (crypto.basePrice * 0.8),
-      circulatingSupply: crypto.marketCap / crypto.basePrice,
-      lastUpdated: now
-    };
-  }
-
-  /**
-   * Mock implementation of market overview fetch
-   */
-  private async fetchMockMarketOverview(): Promise<MarketOverview> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const now = Date.now();
-    
-    // Get top assets for market overview
-    const assets = await this.fetchMockMarketAssets(30);
-    
-    // Calculate total market cap
+  private generateMarketTrends(assets: MarketAsset[]): MarketTrend[] {
     const totalMarketCap = assets.reduce((sum, asset) => sum + asset.marketCap, 0);
     
-    // Calculate BTC and ETH dominance
-    const btc = assets.find(a => a.symbol === 'BTC');
-    const eth = assets.find(a => a.symbol === 'ETH');
+    // Map some common symbols to categories
+    const defiSymbols = ['UNI', 'AAVE', 'CAKE', 'COMP', 'MKR', 'SNX', 'YFI', 'SUSHI', 'CRV'];
+    const gamingSymbols = ['AXS', 'MANA', 'SAND', 'ENJ', 'GALA', 'ILV', 'ALICE'];
+    const layer1Symbols = ['ETH', 'SOL', 'ADA', 'AVAX', 'DOT', 'ATOM', 'NEAR', 'FTM', 'ONE'];
+    const privacySymbols = ['XMR', 'ZEC', 'DASH', 'SCRT', 'ARRR'];
     
-    const btcDominance = btc ? (btc.marketCap / totalMarketCap) * 100 : 45;
-    const ethDominance = eth ? (eth.marketCap / totalMarketCap) * 100 : 18;
+    // Filter assets by category
+    const defiAssets = assets.filter(a => defiSymbols.includes(a.symbol));
+    const gamingAssets = assets.filter(a => gamingSymbols.includes(a.symbol));
+    const layer1Assets = assets.filter(a => layer1Symbols.includes(a.symbol));
+    const privacyAssets = assets.filter(a => privacySymbols.includes(a.symbol));
     
-    // Sort for gainers and losers
-    const sortedByChange = [...assets].sort(
-      (a, b) => b.changePercent24h - a.changePercent24h
-    );
+    // Calculate category metrics
+    const calculateCategoryMetrics = (categoryAssets: MarketAsset[]) => {
+      const totalValue = categoryAssets.reduce((sum, a) => sum + a.marketCap, 0);
+      const avgChange = categoryAssets.length > 0
+        ? categoryAssets.reduce((sum, a) => sum + a.changePercent24h, 0) / categoryAssets.length
+        : 0;
+      const symbols = categoryAssets.map(a => a.symbol);
+      return { totalValue, avgChange, symbols };
+    };
     
-    const topGainers = sortedByChange.slice(0, 5);
-    const topLosers = sortedByChange.slice(-5).reverse();
+    const defiMetrics = calculateCategoryMetrics(defiAssets);
+    const gamingMetrics = calculateCategoryMetrics(gamingAssets);
+    const layer1Metrics = calculateCategoryMetrics(layer1Assets);
+    const privacyMetrics = calculateCategoryMetrics(privacyAssets);
     
-    // Mock trends
-    const trends: MarketTrend[] = [
+    // Create trend objects
+    return [
       {
         id: 'defi',
         name: 'DeFi Tokens',
-        value: totalMarketCap * 0.08,
+        value: defiMetrics.totalValue,
         description: 'Decentralized Finance protocols showing increased activity',
-        changePercent: 12.5,
-        assets: ['UNI', 'LINK', 'AAVE', 'CRV', 'MKR']
+        changePercent: defiMetrics.avgChange,
+        assets: defiMetrics.symbols
       },
       {
         id: 'gaming',
         name: 'Gaming & Metaverse',
-        value: totalMarketCap * 0.04,
+        value: gamingMetrics.totalValue,
         description: 'Gaming tokens seeing increased interest',
-        changePercent: 8.3,
-        assets: ['AXS', 'MANA', 'SAND', 'ENJ']
+        changePercent: gamingMetrics.avgChange,
+        assets: gamingMetrics.symbols
       },
       {
         id: 'layer1',
         name: 'Layer 1 Blockchains',
-        value: totalMarketCap * 0.25,
+        value: layer1Metrics.totalValue,
         description: 'Alternative L1 chains with growing developer activity',
-        changePercent: -3.2,
-        assets: ['SOL', 'ADA', 'AVAX', 'DOT', 'ATOM']
+        changePercent: layer1Metrics.avgChange,
+        assets: layer1Metrics.symbols
       },
       {
         id: 'privacy',
         name: 'Privacy Coins',
-        value: totalMarketCap * 0.01,
+        value: privacyMetrics.totalValue,
         description: 'Privacy-focused cryptocurrencies',
-        changePercent: -5.7,
-        assets: ['XMR', 'ZEC', 'DASH']
+        changePercent: privacyMetrics.avgChange,
+        assets: privacyMetrics.symbols
       }
     ];
-    
-    return {
-      totalMarketCap,
-      totalVolume24h: assets.reduce((sum, asset) => sum + asset.volume24h, 0),
-      btcDominance,
-      ethDominance,
-      defiTvl: totalMarketCap * 0.08, // ~8% of total market
-      fearGreedIndex: 65, // 0-100, higher is more greedy
-      topGainers,
-      topLosers,
-      trends,
-      lastUpdated: now
-    };
   }
 
   /**

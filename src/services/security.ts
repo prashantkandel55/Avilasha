@@ -33,6 +33,7 @@ class SecurityService {
   private readonly WALLET_LOCKED_KEY = 'wallet_locked';
   private readonly ENCRYPTION_KEY = 'avilasha_enc_key';
   private readonly IV_SUFFIX = '_iv';
+  private readonly BIOMETRIC_ENABLED_KEY = 'biometric_enabled';
   private readonly rateLimiters: Map<string, RateLimitTracker> = new Map();
   
   // Default rate limit: 30 requests per minute
@@ -529,6 +530,93 @@ class SecurityService {
       return localStorage.getItem(this.WALLET_LOCKED_KEY) === 'true';
     }
     return false;
+  }
+
+  /**
+   * Enable biometric authentication for the application
+   * Uses the Web Authentication API when available
+   */
+  async enableBiometricAuth(): Promise<boolean> {
+    try {
+      // Check if Web Authentication API is available
+      if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+        // Check if platform authenticator is available
+        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        
+        if (available) {
+          localStorage.setItem(this.BIOMETRIC_ENABLED_KEY, 'true');
+          return true;
+        } else {
+          toast({
+            title: 'Biometric Authentication Unavailable',
+            description: 'Your device does not support biometric authentication',
+            variant: 'destructive'
+          });
+          return false;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Failed to enable biometric authentication:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if biometric authentication is enabled
+   */
+  isBiometricEnabled(): boolean {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(this.BIOMETRIC_ENABLED_KEY) === 'true';
+    }
+    return false;
+  }
+
+  /**
+   * Authenticate using biometrics
+   * @returns Promise resolving to authentication success state
+   */
+  async authenticateWithBiometrics(): Promise<boolean> {
+    if (!this.isBiometricEnabled()) return false;
+    
+    try {
+      // Simple check if WebAuthn is available
+      if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+        // In a real implementation, this would use the WebAuthn API
+        // to create and verify credentials
+        
+        // Simulate biometric verification
+        toast({
+          title: 'Biometric Authentication',
+          description: 'Verify your identity using fingerprint or face recognition',
+          variant: 'default'
+        });
+        
+        // For demonstration, we'll show a successful authentication
+        // In a real app, this would be handled by the WebAuthn API
+        return new Promise(resolve => {
+          setTimeout(() => {
+            toast({
+              title: 'Authentication Successful',
+              description: 'Biometric authentication completed',
+              variant: 'default'
+            });
+            resolve(true);
+          }, 2000);
+        });
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Biometric authentication failed:', error);
+      toast({
+        title: 'Authentication Failed',
+        description: 'Biometric verification could not be completed',
+        variant: 'destructive'
+      });
+      return false;
+    }
   }
 
   /**

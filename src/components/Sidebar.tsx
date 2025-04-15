@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -14,7 +13,8 @@ import {
   Newspaper, 
   HelpCircle, 
   Settings,
-  Plus
+  Plus,
+  Gift
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -135,6 +135,12 @@ const Sidebar = () => {
                 label="News" 
                 active={isActive('/news')} 
               />
+              <SidebarItem 
+                to="/quests" 
+                icon={<Gift size={18} />} 
+                label="Quests & Airdrop" 
+                active={isActive('/quests')} 
+              />
             </nav>
           </div>
           
@@ -148,6 +154,12 @@ const Sidebar = () => {
                 icon={<HelpCircle size={18} />} 
                 label="Help Center" 
                 active={isActive('/help')} 
+              />
+              <SidebarItem 
+                to="/onboarding" 
+                icon={<HelpCircle size={18} />} 
+                label="App Tour" 
+                active={isActive('/onboarding')} 
               />
               <SidebarItem 
                 to="/settings" 

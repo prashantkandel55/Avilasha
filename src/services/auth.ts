@@ -40,7 +40,8 @@ export interface LoginData {
 }
 
 class AuthService {
-  private readonly AUTH_API_URL = process.env.AUTH_API_URL || 'https://api.example.com/auth';
+  // Use import.meta.env for Vite or default to a fallback URL
+  private readonly AUTH_API_URL = (typeof import.meta !== 'undefined' && import.meta.env?.AUTH_API_URL) || 'https://api.example.com/auth';
   private readonly RETRY_COUNT = 3;
   private readonly RETRY_DELAY = 1000; // milliseconds
   private readonly PASSWORD_MIN_LENGTH = 8;
@@ -170,60 +171,86 @@ class AuthService {
   /**
    * Log in with email and password
    */
-  async login({ email, password, rememberMe = false }: LoginData): Promise<User> {
+  public async login(options: { email: string; password: string; rememberMe?: boolean }): Promise<User> {
     try {
-      if (!email || !password) {
-        throw new Error('Email and password are required');
+      const { email, password, rememberMe = false } = options;
+
+      // Validate inputs
+      if (!email || !email.trim()) {
+        throw new Error('Email is required');
       }
 
-      if (!this.validateEmail(email)) {
-        throw new Error('Invalid email format');
+      if (!password || !password.trim()) {
+        throw new Error('Password is required');
       }
 
       // For demo purposes, accept mock credentials
-      // In production, this would be a real API call
-      if (email === 'demo@example.com' && password === 'Demo@123') {
-        // Mock successful login
+      if (email === 'demo@avilasha.com' && password === 'password123') {
         const mockUser: User = {
-          id: '1',
-          email,
+          id: 'demo_user',
+          email: 'demo@avilasha.com',
           fullName: 'Demo User',
+          profilePicture: 'https://ui-avatars.com/api/?name=Demo+User&background=random',
           preferences: {
             theme: 'system',
             notifications: {
               email: true,
               push: true,
               priceAlerts: true,
-              newsAlerts: true,
+              newsAlerts: false,
               securityAlerts: true,
             },
             currency: 'USD',
-            language: 'en',
-          },
+            language: 'en'
+          }
         };
-
-        const mockTokens: TokenPair = {
-          accessToken: {
-            token: 'mock_access_token',
-            expiresAt: Date.now() + 3600 * 1000, // 1 hour
-          },
-          refreshToken: {
-            token: 'mock_refresh_token',
-            expiresAt: Date.now() + 7 * 24 * 3600 * 1000, // 7 days
-          },
-        };
-
-        // Store tokens securely
-        securityService.storeTokens(mockTokens);
         
-        // Store user
+        // Generate mock tokens
+        const mockTokens: TokenPair = {
+          accessToken: this.generateDemoToken(email),
+          refreshToken: this.generateDemoToken(email),
+        };
+        
+        // Store tokens and user
+        securityService.storeTokens(mockTokens);
         this.currentUser = mockUser;
-        localStorage.setItem('user_data', JSON.stringify(mockUser));
-
+        
+        // Store in local/session storage based on remember me
+        if (rememberMe) {
+          localStorage.setItem('user_data', JSON.stringify(mockUser));
+        } else {
+          sessionStorage.setItem('user_data', JSON.stringify(mockUser));
+        }
+        
+        return mockUser;
+      }
+      
+      // Check for registered mock users in local storage
+      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '{}');
+      if (mockUsers[email] && mockUsers[email].password === password) {
+        const mockUser = mockUsers[email].user;
+        
+        // Generate mock tokens
+        const mockTokens: TokenPair = {
+          accessToken: this.generateDemoToken(email),
+          refreshToken: this.generateDemoToken(email),
+        };
+        
+        // Store tokens and user
+        securityService.storeTokens(mockTokens);
+        this.currentUser = mockUser;
+        
+        // Store in local/session storage based on remember me
+        if (rememberMe) {
+          localStorage.setItem('user_data', JSON.stringify(mockUser));
+        } else {
+          sessionStorage.setItem('user_data', JSON.stringify(mockUser));
+        }
+        
         return mockUser;
       }
 
-      // Real API call would go here in production
+      // Real API implementation
       try {
         const response = await this.apiRequest<{user: User, tokens: TokenPair}>('/login', 'POST', { 
           email, 
@@ -231,118 +258,100 @@ class AuthService {
           rememberMe 
         });
         
+        if (!response || !response.user || !response.tokens) {
+          throw new Error('Invalid response from server');
+        }
+
         // Store tokens securely
         securityService.storeTokens(response.tokens);
         
         // Store user
         this.currentUser = response.user;
-        localStorage.setItem('user_data', JSON.stringify(response.user));
+        
+        // Store in local or session storage based on remember me
+        const storageMethod = rememberMe ? localStorage : sessionStorage;
+        storageMethod.setItem('user_data', JSON.stringify(response.user));
         
         return response.user;
       } catch (error) {
         // For demo, fallback to mock data on API failure
         throw new Error('Invalid email or password');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      toast({
-        title: 'Login Failed',
-        description: error.message || 'An unexpected error occurred',
-        variant: 'destructive',
-      });
-      throw error;
+      throw new Error(error.message || 'Login failed. Please try again.');
     }
   }
 
   /**
    * Register a new user
    */
-  async register(data: RegisterData): Promise<User> {
+  public async register(options: { email: string; password: string; fullName: string }): Promise<void> {
     try {
-      if (!data.email || !data.password) {
-        throw new Error('Email and password are required');
+      const { email, password, fullName } = options;
+
+      // Validate inputs
+      if (!email || !email.trim()) {
+        throw new Error('Email is required');
       }
 
-      if (!this.validateEmail(data.email)) {
-        throw new Error('Invalid email format');
+      if (!password || !password.trim()) {
+        throw new Error('Password is required');
       }
 
-      const passwordError = this.validatePassword(data.password);
-      if (passwordError) {
-        throw new Error(passwordError);
+      if (!fullName || !fullName.trim()) {
+        throw new Error('Full name is required');
       }
 
       // For demo purposes only
-      if (data.email === 'demo@example.com') {
+      if (email === 'demo@example.com') {
         throw new Error('This email is already in use');
       }
 
-      // Real API call would go here in production
+      // Real API implementation
       try {
-        const response = await this.apiRequest<{user: User, tokens: TokenPair}>('/register', 'POST', data);
-        
-        // Store tokens securely
-        securityService.storeTokens(response.tokens);
-        
-        // Store user
-        this.currentUser = response.user;
-        localStorage.setItem('user_data', JSON.stringify(response.user));
-        
-        return response.user;
+        await this.apiRequest('/register', 'POST', { 
+          email, 
+          password,
+          fullName 
+        });
       } catch (error) {
         // For demo, create mock user
         const mockUser: User = {
-          id: Math.random().toString(36).substring(2, 15),
-          email: data.email,
-          fullName: data.fullName || data.email.split('@')[0],
+          id: `user_${Date.now()}`,
+          email,
+          fullName,
           preferences: {
             theme: 'system',
             notifications: {
               email: true,
               push: true,
               priceAlerts: true,
-              newsAlerts: true,
+              newsAlerts: false,
               securityAlerts: true,
             },
             currency: 'USD',
-            language: 'en',
-          },
+            language: 'en'
+          }
         };
-
-        const mockTokens: TokenPair = {
-          accessToken: {
-            token: 'mock_access_token_' + mockUser.id,
-            expiresAt: Date.now() + 3600 * 1000, // 1 hour
-          },
-          refreshToken: {
-            token: 'mock_refresh_token_' + mockUser.id,
-            expiresAt: Date.now() + 7 * 24 * 3600 * 1000, // 7 days
-          },
-        };
-
-        // Store tokens securely
-        securityService.storeTokens(mockTokens);
         
-        // Store user
-        this.currentUser = mockUser;
-        localStorage.setItem('user_data', JSON.stringify(mockUser));
-
+        // Store mock user in localStorage for demo purposes
+        const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '{}');
+        mockUsers[email] = { 
+          password, 
+          user: mockUser 
+        };
+        localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+        
         toast({
-          title: 'Registration Successful',
+          title: 'Account Created',
           description: 'Account created successfully in demo mode',
           variant: 'default',
         });
-
-        return mockUser;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      toast({
-        title: 'Registration Failed',
-        description: error.message || 'An unexpected error occurred',
-        variant: 'destructive',
-      });
-      throw error;
+      throw new Error(error.message || 'Registration failed. Please try again.');
     }
   }
 
@@ -390,41 +399,49 @@ class AuthService {
   }
 
   /**
-   * Refresh the authentication token
+   * Refresh the access token using the refresh token
    */
-  async refreshToken(): Promise<boolean> {
+  async refreshToken(): Promise<TokenPair | null> {
     try {
       const refreshToken = securityService.getRefreshToken();
       
-      if (!refreshToken || securityService.isTokenExpired(refreshToken)) {
-        return false;
+      if (!refreshToken) {
+        console.warn('No refresh token available');
+        return null;
       }
       
-      // For demo purposes
-      const mockTokens: TokenPair = {
-        accessToken: {
-          token: 'new_mock_access_token',
-          expiresAt: Date.now() + 3600 * 1000, // 1 hour
-        },
-        refreshToken: {
-          token: refreshToken.token,
-          expiresAt: refreshToken.expiresAt,
-        },
-      };
+      // Api request to refresh token
+      const response = await this.apiRequest<TokenPair>('/refresh-token', 'POST', { 
+        refreshToken 
+      });
       
-      securityService.storeTokens(mockTokens);
-      return true;
+      if (!response) {
+        throw new Error('Failed to refresh token');
+      }
       
-      // Real API implementation:
-      // const response = await this.apiRequest<{tokens: TokenPair}>('/refresh-token', 'POST', {
-      //   refreshToken: refreshToken.token
-      // });
-      // securityService.storeTokens(response.tokens);
-      // return true;
+      // Store new tokens
+      securityService.storeTokens(response);
+      
+      return response;
     } catch (error) {
-      console.error('Token refresh failed:', error);
-      return false;
+      console.error('Token refresh error:', error);
+      // Clear auth state on refresh failure
+      this.logout();
+      return null;
     }
+  }
+
+  /**
+   * Generate a demo JWT token for development purposes
+   */
+  private generateDemoToken(email: string): JwtToken {
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = now + 3600; // 1 hour
+    
+    return {
+      token: `demo.${btoa(email)}.${expiresAt}`,
+      expiresAt: expiresAt
+    };
   }
 
   /**
@@ -447,7 +464,7 @@ class AuthService {
       
       this.currentUser = updatedUser;
       localStorage.setItem('user_data', JSON.stringify(updatedUser));
-      
+
       toast({
         title: 'Profile Updated',
         description: 'Your profile has been successfully updated',
@@ -489,7 +506,7 @@ class AuthService {
       
       this.currentUser = updatedUser;
       localStorage.setItem('user_data', JSON.stringify(updatedUser));
-      
+
       toast({
         title: 'Preferences Updated',
         description: 'Your preferences have been saved',

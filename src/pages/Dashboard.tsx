@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Bell, RefreshCw } from 'lucide-react';
 import { WalletDashboard } from '../components/WalletDashboard';
@@ -9,6 +8,7 @@ import TopAssets from '@/components/TopAssets';
 import TopCryptos from '@/components/TopCryptos';
 import NotificationSettingsModal from '@/components/NotificationSettingsModal';
 import { Button } from '@/components/ui/button';
+import ProfilePoints from '../components/ProfilePoints';
 
 const Dashboard = () => {
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
@@ -30,7 +30,10 @@ const Dashboard = () => {
           <span>Notifications</span>
         </Button>
       </div>
-      
+      {/* Profile Points for Airdrop Eligibility */}
+      <div className="mb-6">
+        <ProfilePoints />
+      </div>
       <PortfolioStatsRow />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">

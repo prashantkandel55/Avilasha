@@ -9,7 +9,7 @@ declare global {
       maximize: () => void;
       close: () => void;
       isMaximized: () => Promise<boolean>;
-      onMaximizeChange: (callback: (event: any, isMaximized: boolean) => void) => void;
+      onMaximizeChange: (callback: (isMaximized: boolean) => void) => () => void;
     };
   }
 }
@@ -18,29 +18,52 @@ export default function WindowControls() {
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
-    // Check initial maximize state
-    window.electron.isMaximized().then(setIsMaximized);
+    // Check if we're running in Electron
+    if (typeof window.electron !== 'undefined') {
+      // Check initial maximize state
+      window.electron.isMaximized().then(setIsMaximized).catch(err => {
+        console.error('Failed to get maximize state:', err);
+      });
 
-    // Listen for maximize state changes
-    window.electron.onMaximizeChange((_event, maximized) => {
-      setIsMaximized(maximized);
-    });
+      // Listen for maximize state changes
+      const unsubscribe = window.electron.onMaximizeChange((maximized) => {
+        setIsMaximized(maximized);
+      });
+
+      // Clean up listener when component unmounts
+      return () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      };
+    }
   }, []);
 
   const handleMinimize = () => {
-    window.electron.minimize();
+    if (typeof window.electron !== 'undefined') {
+      window.electron.minimize();
+    }
   };
 
   const handleMaximize = () => {
-    window.electron.maximize();
+    if (typeof window.electron !== 'undefined') {
+      window.electron.maximize();
+    }
   };
 
   const handleClose = () => {
-    window.electron.close();
+    if (typeof window.electron !== 'undefined') {
+      window.electron.close();
+    }
   };
 
+  // Don't render window controls if not in Electron
+  if (typeof window.electron === 'undefined') {
+    return null;
+  }
+
   return (
-    <div className="flex items-center space-x-1">
+    <div className="flex items-center space-x-1 -mr-1">
       <Button
         variant="ghost"
         size="icon"

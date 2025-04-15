@@ -39,7 +39,7 @@ export interface NewsApiResponse {
 }
 
 class NewsApiService {
-  private readonly API_KEY = process.env.NEWS_API_KEY || 'YOUR_NEWS_API_KEY'; // Replace with your actual key
+  private readonly API_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.NEWS_API_KEY) || 'YOUR_NEWS_API_KEY'; // Replace with your actual key
   private readonly API_BASE_URL = 'https://newsapi.org/v2';
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   private cache: Map<string, { data: any; timestamp: number }> = new Map();

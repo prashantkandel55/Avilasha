@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { authService } from '@/services/auth';
+import { AuthService } from '@/services/authService';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -51,29 +51,24 @@ const Auth = () => {
         throw new Error('Password must be at least 8 characters long');
       }
 
-      const response = await authService.login(loginData.email, loginData.password);
-      
-      if (!response || !response.token) {
-        throw new Error('Login failed. Please try again.');
+      const { user, error } = await AuthService.signIn(loginData.email, loginData.password);
+      if (error || !user) {
+        throw new Error(error?.message || 'Login failed. Please try again.');
       }
       
       // Show success toast
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${response.user.fullName || 'User'}!`,
+        description: `Welcome back, ${user.email || 'User'}!`,
         duration: 2000
       });
       
       // Dispatch auth state change event before navigation
       window.dispatchEvent(new CustomEvent('auth-state-changed', { 
-        detail: { isAuthenticated: true, user: response.user }
+        detail: { isAuthenticated: true, user: user }
       }));
       
-      // Store auth token
-      localStorage.setItem('auth_token', response.token);
-      
       // Navigate to dashboard after state update
-      // Reduced timeout since we're now properly handling the auth token
       setTimeout(() => navigate('/', { replace: true }), 500);
     } catch (error: any) {
       const errorMessage = error.message || 'Login failed. Please try again.';
@@ -116,15 +111,27 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      await authService.signup(signupData.email, signupData.password, signupData.fullName);
+      const { user, error } = await AuthService.signUp(signupData.email, signupData.password);
+      if (error || !user) {
+        setError(error?.message || 'Signup failed. Please try again.');
+        toast({
+          title: "Signup Failed",
+          description: error?.message || 'Signup failed. Please try again.',
+          variant: "destructive"
+        });
+        return;
+      }
       
       toast({
         title: "Account Created",
-        description: `Welcome to Avilasha, ${signupData.fullName}! Please log in with your credentials.`
+        description: `Welcome to Avilasha, ${signupData.email}! Please log in with your credentials.`
       });
       
       // Switch to login tab after successful signup
-      document.querySelector('[data-tab="login"]')?.click();
+      const loginTab = document.querySelector('[data-tab="login"]');
+      if (loginTab && loginTab instanceof HTMLElement) {
+        loginTab.click();
+      }
     } catch (error: any) {
       setError(error.message);
       toast({

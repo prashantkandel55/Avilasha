@@ -6,24 +6,40 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => ({
   build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    minify: mode !== 'development',
+    sourcemap: mode === 'development',
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html')
+      },
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          radix: [
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-label',
+            '@radix-ui/react-select',
+          ],
+        }
       }
     }
   },
   optimizeDeps: {
-    include: ['react', 'react-dom']
+    include: ['react', 'react-dom', 'react-router-dom']
   },
-  base: './',
+  base: './', // Required for Electron to load assets correctly
   server: {
-    port: 3001,
+    port: 3003, // changed from 3002 to avoid port conflict
     host: 'localhost',
-    strictPort: false,
+    strictPort: true, // Help with Electron specific port requirements
     hmr: {
       protocol: 'ws',
       host: 'localhost',
-      port: 3001
+      port: 3003
     }
   },
   plugins: [

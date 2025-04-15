@@ -6,6 +6,9 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense, useState, useEffect } from "react";
 import MainLayout from "./layouts/MainLayout";
 import { toast } from "sonner";
+import { ThemeProvider } from "next-themes";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { AuthService } from '@/services/authService';
 
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -22,6 +25,7 @@ const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Auth = lazy(() => import("./pages/Auth"));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 // Create query client with defaults
 const queryClient = new QueryClient({
@@ -48,31 +52,6 @@ type ElectronBridge = {
   onShowError: (callback: (error: { title: string; message: string }) => void) => void;
 }
 
-// Error handling for Electron messages
-useEffect(() => {
-  // Check if Electron bridge is available and has the error handler
-  if (typeof window !== 'undefined' && 
-      window.electron && 
-      // @ts-ignore - Runtime check for the onShowError method
-      typeof window.electron.onShowError === 'function') {
-    
-    // @ts-ignore - Safe to use since we've checked it exists
-    const unsubscribe = window.electron.onShowError((error: { title: string; message: string }) => {
-      toast.error(error.title, {
-        description: error.message,
-        duration: 5000,
-      });
-    });
-    
-    // Clean up subscription on unmount
-    return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    };
-  }
-}, []);
-
 // Loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -86,21 +65,22 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check initial authentication state
-    const token = localStorage.getItem('auth_token');
-    setIsAuthenticated(!!token);
-    setIsLoading(false);
-
-    // Listen for auth state changes
-    const handleAuthChange = (event: CustomEvent) => {
-      setIsAuthenticated(event.detail.isAuthenticated);
+    // Check initial authentication state with Supabase
+    AuthService.getCurrentUser().then(user => {
+      setIsAuthenticated(!!user);
       setIsLoading(false);
-    };
+    });
 
-    window.addEventListener('auth-state-changed', handleAuthChange as EventListener);
+    // Listen for Supabase auth state changes
+    const { data: listener } = AuthService.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user);
+      setIsLoading(false);
+    });
 
     return () => {
-      window.removeEventListener('auth-state-changed', handleAuthChange as EventListener);
+      if (listener && typeof listener.subscription?.unsubscribe === 'function') {
+        listener.subscription.unsubscribe();
+      }
     };
   }, []);
 
@@ -108,43 +88,75 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <PageLoader />;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  return <>{children}</>;
+  return isAuthenticated ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/auth" replace />
+  );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <HashRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-              <Route index element={<Dashboard />} />
-              <Route path="portfolio" element={<PortfolioAnalytics />} />
-              <Route path="market" element={<MarketAnalysis />} />
-              <Route path="assets" element={<Assets />} />
-              <Route path="wallets" element={<Wallets />} />
-              <Route path="defi" element={<DeFi />} />
-              <Route path="nfts" element={<NFTs />} />
-              <Route path="history" element={<History />} />
-              <Route path="alerts" element={<Alerts />} />
-              <Route path="news" element={<News />} />
-              <Route path="help" element={<HelpCenter />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="not-found" element={<NotFound />} />
-              <Route path="*" element={<Navigate to="/not-found" replace />} />
-            </Route>
-          </Routes>
-        </Suspense>
-      </HashRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Error handling for Electron messages
+  useEffect(() => {
+    // Check if Electron bridge is available and has the error handler
+    if (typeof window !== 'undefined' && 
+        window.electron && 
+        // @ts-ignore - Runtime check for the onShowError method
+        typeof window.electron.onShowError === 'function') {
+      
+      // @ts-ignore - Safe to use since we've checked it exists
+      const unsubscribe = window.electron.onShowError((error: { title: string; message: string }) => {
+        toast.error(error.title, {
+          description: error.message,
+          duration: 5000,
+        });
+      });
+      
+      // Clean up subscription on unmount
+      return () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      };
+    }
+  }, []);
+
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <HashRouter>
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/onboarding" element={<Onboarding />} />
+                  <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="portfolio" element={<PortfolioAnalytics />} />
+                    <Route path="market" element={<MarketAnalysis />} />
+                    <Route path="assets" element={<Assets />} />
+                    <Route path="wallets" element={<Wallets />} />
+                    <Route path="defi" element={<DeFi />} />
+                    <Route path="nfts" element={<NFTs />} />
+                    <Route path="history" element={<History />} />
+                    <Route path="alerts" element={<Alerts />} />
+                    <Route path="news" element={<News />} />
+                    <Route path="help" element={<HelpCenter />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="not-found" element={<NotFound />} />
+                    <Route path="*" element={<Navigate to="/not-found" replace />} />
+                  </Route>
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </HashRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;

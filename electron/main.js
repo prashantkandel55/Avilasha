@@ -6,7 +6,10 @@ async function initialize() {
     const { fileURLToPath } = await import('url');
     const { autoUpdater } = await import('electron-updater');
     const windowStateKeeper = (await import('electron-window-state')).default;
-    const { default: installExtension, REACT_DEVELOPER_TOOLS } = await import('electron-devtools-installer');
+    // Devtools installer import fix for ESM/CJS compatibility (strict)
+    const devtoolsInstaller = await import('electron-devtools-installer');
+    const installExtension = devtoolsInstaller.default;
+    const { REACT_DEVELOPER_TOOLS } = devtoolsInstaller;
     const { default: electronDebug } = await import('electron-debug');
 
     const __filename = fileURLToPath(import.meta.url);
@@ -51,14 +54,16 @@ async function initialize() {
     // Enable hot reload in development
     if (isDev) {
       try {
-        // In ES modules, we can't pass 'module' to electron-reloader
-        // Instead, we pass the path to our main file
+        // Temporarily disable hot reload as it's causing issues
+        console.log('Hot reloading disabled temporarily');
+        /*
         const reloader = await import('electron-reloader');
         reloader.default(import.meta.url, {
           debug: true,
           watchRenderer: true
         });
         console.log('Hot reloading enabled');
+        */
       } catch (error) {
         console.log('Error setting up hot reloading:', error);
       }
@@ -246,13 +251,60 @@ async function initialize() {
         mainWindow.hide();
       });
 
-      // Auto updater events
-      autoUpdater.on('update-available', () => {
-        mainWindow.webContents.send('update_available');
+      // IPC handlers for window controls and tray
+      ipcMain.on('app-minimize', () => {
+        if (mainWindow) mainWindow.minimize();
+      });
+      ipcMain.on('app-maximize', () => {
+        if (mainWindow) {
+          if (mainWindow.isMaximized()) {
+            mainWindow.unmaximize();
+          } else {
+            mainWindow.maximize();
+          }
+        }
+      });
+      ipcMain.on('app-close', () => {
+        if (mainWindow) mainWindow.close();
+      });
+      ipcMain.handle('is-maximized', () => {
+        if (mainWindow) return mainWindow.isMaximized();
+        return false;
       });
 
+      // Notify renderer when maximize state changes
+      if (mainWindow) {
+        mainWindow.on('maximize', () => {
+          mainWindow.webContents.send('maximize-change', true);
+        });
+        mainWindow.on('unmaximize', () => {
+          mainWindow.webContents.send('maximize-change', false);
+        });
+      }
+
+      // Tray controls
+      ipcMain.on('hide-to-tray', () => {
+        if (mainWindow && tray) {
+          mainWindow.hide();
+        }
+      });
+      ipcMain.on('show-from-tray', () => {
+        if (mainWindow) mainWindow.show();
+      });
+
+      // Error handling
+      ipcMain.on('show-error', (event, { title, message }) => {
+        if (mainWindow) {
+          mainWindow.webContents.send('show-error', { title, message });
+        }
+      });
+
+      // Auto-update events
+      autoUpdater.on('update-available', () => {
+        if (mainWindow) mainWindow.webContents.send('update_available');
+      });
       autoUpdater.on('update-downloaded', () => {
-        mainWindow.webContents.send('update_downloaded');
+        if (mainWindow) mainWindow.webContents.send('update_downloaded');
       });
     }
 

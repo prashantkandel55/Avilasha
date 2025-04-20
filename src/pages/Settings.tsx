@@ -7,6 +7,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Shield, Bell, CreditCard, Globe, Moon, Sun, Monitor } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AuthService } from '@/services/authService';
+import { walletService } from '@/services/wallet.service';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const Settings = () => {
   const { toast } = useToast();
@@ -14,6 +16,9 @@ const Settings = () => {
   const [darkMode, setDarkMode] = useState(true);
   const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('dark');
   const [profile, setProfile] = useState({ fullName: '', email: '', phone: '' });
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -29,76 +34,39 @@ const Settings = () => {
     })();
   }, []);
 
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setProfile({ ...profile, [id]: value });
-  };
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
 
-  const handleSaveProfile = async () => {
-    const user = await AuthService.getCurrentUser();
-    if (!user) {
-      toast({ title: "Not logged in", description: "Please log in to update your profile", variant: "destructive" });
-      return;
-    }
-    const { error } = await AuthService.updateProfile(user.id, {
-      full_name: profile.fullName,
-      phone: profile.phone
-    });
-    if (error) {
-      toast({ title: "Profile Update Failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Profile Updated", description: "Your profile information has been saved" });
-    }
-  };
-
-  const handleThemeChange = (newTheme: 'dark' | 'light' | 'system') => {
-    setTheme(newTheme);
-    if (newTheme === 'system') {
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setDarkMode(systemPrefersDark);
-    } else {
-      setDarkMode(newTheme === 'dark');
-    }
-    toast({
-      title: "Theme Changed",
-      description: `Theme set to ${newTheme}`,
-    });
-  };
+  if (loading) {
+    return <div className="text-center p-10">Loading settings...</div>;
+  }
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-1">Settings</h1>
-        <p className="text-muted-foreground">Manage your account settings and preferences</p>
-      </div>
+    <div className="max-w-3xl mx-auto mt-10 p-6 bg-black/30 rounded-2xl shadow-lg animate-fade-in">
+      {!wallets.length && (
+        <div className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg mb-6 flex items-center gap-2">
+          <Shield size={18} className="text-yellow-600" />
+          <span>No wallet connected. Some features may be limited until you connect a wallet.</span>
+          <Button className="ml-auto" onClick={() => setShowWalletModal(true)} variant="outline">Connect Wallet</Button>
+        </div>
+      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="flex gap-2 mb-6">
+          <TabsTrigger value="profile" className="flex gap-2 items-center"><User size={18}/>Profile</TabsTrigger>
+          <TabsTrigger value="security" className="flex gap-2 items-center"><Shield size={18}/>Security</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex gap-2 items-center"><Bell size={18}/>Notifications</TabsTrigger>
+          <TabsTrigger value="payment" className="flex gap-2 items-center"><CreditCard size={18}/>Payment</TabsTrigger>
+          <TabsTrigger value="preferences" className="flex gap-2 items-center"><Globe size={18}/>Preferences</TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-card rounded-xl shadow-sm overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="p-4">
-              <TabsList className="grid grid-cols-1 gap-2">
-                <TabsTrigger value="profile" className="flex justify-start gap-2 px-4 py-3">
-                  <User size={18} />
-                  <span>Profile</span>
-                </TabsTrigger>
-                <TabsTrigger value="security" className="flex justify-start gap-2 px-4 py-3">
-                  <Shield size={18} />
-                  <span>Security</span>
-                </TabsTrigger>
-                <TabsTrigger value="notifications" className="flex justify-start gap-2 px-4 py-3">
-                  <Bell size={18} />
-                  <span>Notifications</span>
-                </TabsTrigger>
-                <TabsTrigger value="payment" className="flex justify-start gap-2 px-4 py-3">
-                  <CreditCard size={18} />
-                  <span>Payment Methods</span>
-                </TabsTrigger>
-                <TabsTrigger value="preferences" className="flex justify-start gap-2 px-4 py-3">
-                  <Globe size={18} />
-                  <span>Preferences</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
-          </Tabs>
         </div>
         <div className="lg:col-span-2 space-y-6">
           {activeTab === 'profile' && (
@@ -110,7 +78,7 @@ const Settings = () => {
                   <Input
                     id="fullName"
                     value={profile.fullName}
-                    onChange={handleProfileChange}
+                    onChange={(e) => handleProfileChange(e)}
                     className="mt-1"
                   />
                 </div>
@@ -129,7 +97,7 @@ const Settings = () => {
                   <Input
                     id="phone"
                     value={profile.phone}
-                    onChange={handleProfileChange}
+                    onChange={(e) => handleProfileChange(e)}
                     className="mt-1"
                   />
                 </div>
@@ -243,8 +211,48 @@ const Settings = () => {
           )}
         </div>
       </div>
+      {showWalletModal && (
+        <WalletConnectModal onConnect={() => setShowWalletModal(false)} onClose={() => setShowWalletModal(false)} />
+      )}
     </div>
   );
+
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setProfile({ ...profile, [id]: value });
+  };
+
+  const handleSaveProfile = async () => {
+    const user = await AuthService.getCurrentUser();
+    if (!user) {
+      toast({ title: "Not logged in", description: "Please log in to update your profile", variant: "destructive" });
+      return;
+    }
+    const { error } = await AuthService.updateProfile(user.id, {
+      full_name: profile.fullName,
+      phone: profile.phone
+    });
+    if (error) {
+      toast({ title: "Profile Update Failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profile Updated", description: "Your profile information has been saved" });
+    }
+  };
+
+  const handleThemeChange = (newTheme: 'dark' | 'light' | 'system') => {
+    setTheme(newTheme);
+    if (newTheme === 'system') {
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setDarkMode(systemPrefersDark);
+    } else {
+      setDarkMode(newTheme === 'dark');
+    }
+    toast({
+      title: "Theme Changed",
+      description: `Theme set to ${newTheme}`,
+    });
+  };
+
 };
 
 export default Settings;

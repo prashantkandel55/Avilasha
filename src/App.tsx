@@ -101,10 +101,12 @@ const App = () => {
     // Check if Electron bridge is available and has the error handler
     if (typeof window !== 'undefined' && 
         window.electron && 
-        // @ts-ignore - Runtime check for the onShowError method
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
         typeof window.electron.onShowError === 'function') {
       
-      // @ts-ignore - Safe to use since we've checked it exists
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
       const unsubscribe = window.electron.onShowError((error: { title: string; message: string }) => {
         toast.error(error.title, {
           description: error.message,

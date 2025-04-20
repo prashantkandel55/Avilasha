@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LivePriceCard } from '@/components/LivePriceCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Search, Star, ArrowUpDown, Filter, BarChart, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
+import { walletService } from '@/services/wallet.service';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const cryptoAssets = [
   {
@@ -82,10 +83,50 @@ const cryptoAssets = [
 ];
 
 const Assets = () => {
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('value');
   const [sortDirection, setSortDirection] = useState('desc');
-  
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center p-10">Loading assets...</div>;
+  }
+
+  if (!wallets.length) {
+    return (
+      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
+        <p className="mb-4">Connect a wallet to view your assets.</p>
+        <button
+          className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition"
+          onClick={() => setShowWalletModal(true)}
+        >
+          Connect Wallet
+        </button>
+        {showWalletModal && (
+          <WalletConnectModal onConnect={() => {
+            setShowWalletModal(false);
+            (async () => {
+              const allWallets = await walletService.getAllWallets?.() || [];
+              setWallets(allWallets);
+            })();
+          }} />
+        )}
+      </div>
+    );
+  }
+
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');

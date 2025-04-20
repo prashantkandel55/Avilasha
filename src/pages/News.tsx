@@ -11,25 +11,37 @@ import { Newspaper, Search, Bookmark, Share2, Calendar, TrendingUp, Clock, BarCh
 import { toast } from '@/hooks/use-toast';
 import { newsApiService, NewsItem } from '@/services/news-api';
 import { Skeleton } from "@/components/ui/skeleton";
+import { walletService } from '@/services/wallet.service';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const News = () => {
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [topHeadlines, setTopHeadlines] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [searchLoading, setSearchLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
+
   useEffect(() => {
     fetchNews();
     fetchTopHeadlines();
   }, []);
-  
+
   const fetchNews = async (page = 1) => {
     try {
-      setLoading(true);
       setError(null);
       const latestNews = await newsApiService.getLatestNews(page);
       
@@ -47,8 +59,6 @@ const News = () => {
         description: 'Failed to load news data',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
   
@@ -140,6 +150,34 @@ const News = () => {
     fetchNews(currentPage + 1);
   };
 
+  if (loading) {
+    return <div className="text-center p-10">Loading news...</div>;
+  }
+
+  if (!wallets.length) {
+    return (
+      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
+        <p className="mb-4">Connect a wallet to view crypto news.</p>
+        <button
+          className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition"
+          onClick={() => setShowWalletModal(true)}
+        >
+          Connect Wallet
+        </button>
+        {showWalletModal && (
+          <WalletConnectModal onConnect={() => {
+            setShowWalletModal(false);
+            (async () => {
+              const allWallets = await walletService.getAllWallets?.() || [];
+              setWallets(allWallets);
+            })();
+          }} />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto pt-6 pb-12">
       <div className="flex flex-col space-y-4 mb-6">
@@ -195,7 +233,7 @@ const News = () => {
           <TabsContent value="all">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                {loading && news.length === 0 ? (
+                {news.length === 0 ? (
                   <Card>
                     <CardContent className="pt-6">
                       <div className="space-y-2">
@@ -209,7 +247,7 @@ const News = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ) : news.length > 0 ? (
+                ) : (
                   <Card>
                     <CardContent className="p-6">
                       <div className="relative mb-6">
@@ -278,24 +316,10 @@ const News = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ) : (
-                  <Card>
-                    <CardContent className="p-6 flex justify-center items-center min-h-[200px]">
-                      <div className="text-center">
-                        <Newspaper className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                        <h3 className="font-medium mb-1">No News Found</h3>
-                        <p className="text-muted-foreground">
-                          {searchTerm 
-                            ? 'Try a different search term' 
-                            : 'News articles will appear here'}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
                 )}
               
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                  {loading && news.length === 0 ? (
+                  {news.length === 0 ? (
                     Array(6).fill(0).map((_, i) => (
                       <Card key={i}>
                         <CardContent className="pt-6">
@@ -379,7 +403,7 @@ const News = () => {
                   </CardHeader>
                   
                   <CardContent className="px-3">
-                    {loading && news.length === 0 ? (
+                    {news.length === 0 ? (
                       <div className="space-y-4">
                         {Array(5).fill(0).map((_, i) => (
                           <div key={i} className="flex gap-2">
@@ -433,9 +457,8 @@ const News = () => {
                       variant="outline" 
                       className="w-full"
                       onClick={loadMore}
-                      disabled={loading}
                     >
-                      {loading ? 'Loading...' : 'Load More News'}
+                      Load More News
                     </Button>
                   </CardFooter>
                 </Card>

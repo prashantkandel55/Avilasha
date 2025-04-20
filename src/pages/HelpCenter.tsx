@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -44,6 +43,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { walletService } from '@/services/wallet.service';
 
 // Create components for missing elements
 const DotSeparator = ({ className }: { className?: string }) => (
@@ -124,7 +124,32 @@ const HelpCenter = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
-  
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center p-10">Loading help center...</div>;
+  }
+
+  if (!wallets.length) {
+    return (
+      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
+        <p className="mb-4">Connect a wallet to access help center.</p>
+        <a href="/wallets" className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition">Connect Wallet</a>
+      </div>
+    );
+  }
+
   const filteredFaqs = faqs.filter(faq => 
     faq.question.toLowerCase().includes(searchTerm.toLowerCase()) || 
     faq.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||

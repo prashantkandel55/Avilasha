@@ -1,9 +1,10 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, BarChart, PieChart, Wallet, TrendingUp, Calendar } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { walletService } from '@/services/wallet.service';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const data = [
   { name: 'Jan', value: 4500 },
@@ -16,8 +17,50 @@ const data = [
 ];
 
 const PortfolioAnalytics = () => {
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center p-10">Loading portfolio...</div>;
+  }
+
+  if (!wallets.length) {
+    return (
+      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
+        <p className="mb-4">Connect a wallet to view your portfolio analytics.</p>
+        <button
+          className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition"
+          onClick={() => setShowWalletModal(true)}
+        >
+          Connect Wallet
+        </button>
+        {showWalletModal && (
+          <WalletConnectModal onConnect={() => {
+            setShowWalletModal(false);
+            // Refetch wallets after connect
+            (async () => {
+              const allWallets = await walletService.getAllWallets?.() || [];
+              setWallets(allWallets);
+            })();
+          }} />
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="animate-fade-in">
+    <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-1">Portfolio Analytics</h1>
         <p className="text-muted-foreground">Track and analyze your portfolio performance over time</p>

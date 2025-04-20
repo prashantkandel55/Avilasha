@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -7,10 +6,52 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowUpRight, TrendingUp, ArrowRightLeft, Wallet, Percent, ChevronRight, BarChart, Layers, CreditCard, PiggyBank, Landmark, ChevronDown, Globe, ArrowDownRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { walletService } from '@/services/wallet.service';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const DeFi = () => {
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const { toast } = useToast();
   
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center p-10">Loading DeFi dashboard...</div>;
+  }
+
+  if (!wallets.length) {
+    return (
+      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
+        <p className="mb-4">Connect a wallet to view your DeFi dashboard.</p>
+        <button
+          className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition"
+          onClick={() => setShowWalletModal(true)}
+        >
+          Connect Wallet
+        </button>
+        {showWalletModal && (
+          <WalletConnectModal onConnect={() => {
+            setShowWalletModal(false);
+            (async () => {
+              const allWallets = await walletService.getAllWallets?.() || [];
+              setWallets(allWallets);
+            })();
+          }} />
+        )}
+      </div>
+    );
+  }
+
   const handleClaimRewards = () => {
     toast({
       title: "Rewards Claimed",

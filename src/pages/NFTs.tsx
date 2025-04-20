@@ -1,6 +1,7 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, RefreshCw, Tag, CircleDot } from 'lucide-react';
+import { walletService } from '@/services/wallet.service';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const getActivityIcon = (type: string) => {
   if (type === "Purchase" || type === "Mint") {
@@ -53,6 +54,47 @@ const nftCollections = [
 ];
 
 const NFTs = () => {
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center p-10">Loading NFTs...</div>;
+  }
+
+  if (!wallets.length) {
+    return (
+      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
+        <p className="mb-4">Connect a wallet to view your NFTs.</p>
+        <button
+          className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition"
+          onClick={() => setShowWalletModal(true)}
+        >
+          Connect Wallet
+        </button>
+        {showWalletModal && (
+          <WalletConnectModal onConnect={() => {
+            setShowWalletModal(false);
+            (async () => {
+              const allWallets = await walletService.getAllWallets?.() || [];
+              setWallets(allWallets);
+            })();
+          }} />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="slide-up-animation">

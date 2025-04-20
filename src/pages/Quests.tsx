@@ -1,13 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QuestService, { Quest } from '@/services/quest';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Gift, Loader2 } from 'lucide-react';
+import { walletService } from '@/services/wallet.service';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const Quests: React.FC = () => {
-  const [quests, setQuests] = useState<Quest[]>(QuestService.getQuests());
-  const [points, setPoints] = useState<number>(QuestService.getPoints());
-  const [loading, setLoading] = useState(false);
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [quests, setQuests] = useState<Quest[]>([]);
+  const [points, setPoints] = useState<number>(0);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
+
+  useEffect(() => {
+    if (wallets.length) {
+      setQuests(QuestService.getQuests());
+      setPoints(QuestService.getPoints());
+    }
+  }, [wallets]);
 
   const handleComplete = (id: string) => {
     setLoading(true);
@@ -28,14 +48,47 @@ const Quests: React.FC = () => {
     }, 800);
   };
 
+  if (loading) {
+    return <div className="text-center p-10">Loading quests...</div>;
+  }
+
+  if (!wallets.length) {
+    return (
+      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
+        <p className="mb-4">Connect a wallet to view quests.</p>
+        <button
+          className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition"
+          onClick={() => setShowWalletModal(true)}
+        >
+          Connect Wallet
+        </button>
+        {showWalletModal && (
+          <WalletConnectModal onConnect={() => {
+            setShowWalletModal(false);
+            (async () => {
+              const allWallets = await walletService.getAllWallets?.() || [];
+              setWallets(allWallets);
+            })();
+          }} />
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-2xl mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-        <Gift className="w-7 h-7 text-yellow-500" /> Quests & Airdrop
-      </h1>
-      <div className="mb-6 flex items-center gap-3">
-        <span className="text-lg">Your Points:</span>
-        <span className="font-semibold text-primary text-2xl">{points}</span>
+    <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in">
+      <div className="flex justify-between items-center mb-6 slide-up-animation">
+        <div>
+          <h1 className="text-3xl font-bold mb-1 flex items-center gap-2">
+            <Gift className="w-7 h-7 text-yellow-500" /> Quests & Airdrop
+          </h1>
+          <p className="text-muted-foreground">Complete quests to earn rewards and points</p>
+        </div>
+        <div className="mb-6 flex items-center gap-3">
+          <span className="text-lg">Your Points:</span>
+          <span className="font-semibold text-primary text-2xl">{points}</span>
+        </div>
       </div>
       <div className="space-y-6">
         {quests.map(quest => (

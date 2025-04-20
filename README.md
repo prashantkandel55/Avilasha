@@ -7,10 +7,12 @@ Avilasha-2 is an Electron desktop application for cryptocurrency portfolio manag
 ## 📸 Screenshots
 
 <div align="center">
+  <img src="docs/images/Login.png" alt="Login Screen" width="45%" />
   <img src="docs/images/dashboard-placeholder.png" alt="Dashboard" width="45%" />
-  <img src="docs/images/portfolio-placeholder.png" alt="Portfolio Analytics" width="45%" />
   <br/>
+  <img src="docs/images/portfolio-placeholder.png" alt="Portfolio Analytics" width="45%" />
   <img src="docs/images/wallets-placeholder.png" alt="Wallet Management" width="45%" />
+  <br/>
   <img src="docs/images/market-placeholder.png" alt="Market Analysis" width="45%" />
 </div>
 
@@ -25,14 +27,48 @@ Avilasha-2 is an Electron desktop application for cryptocurrency portfolio manag
 - **Transaction History**: Complete record of your crypto transactions
 - **Secure Storage**: Enhanced security for sensitive financial data
 
+## 🔄 Workflow
+
+![Workflow Diagram](docs/images/workflow-diagram.png)
+
+## 🔑 Authentication & Supabase Integration
+
+- **Supabase Auth**: User authentication and session management are handled securely via [Supabase](https://supabase.com/).
+- **User Profiles**: User profile data (full name, email, phone, avatar) is stored in the Supabase `profiles` table and editable within the app.
+- **Session Security**: No sensitive tokens are stored in localStorage. Sessions are managed by Supabase and expired on logout/inactivity.
+
+### Supabase Setup
+1. Create a [Supabase](https://supabase.com/) project.
+2. In your Supabase dashboard, create a `profiles` table with at least these columns:
+   - `id` (UUID, primary key, references `auth.users.id`)
+   - `full_name` (text)
+   - `email` (text)
+   - `phone` (text)
+   - `avatar_url` (text, optional)
+3. Get your Supabase URL and anon/public API key from Project Settings → API.
+4. Add these to your `.env` or config files as shown in `src/services/supabaseClient.ts`.
+
+## 🔄 Automated Release Notes
+
+This project uses [Release Drafter](https://github.com/release-drafter/release-drafter) to automatically generate release notes for every GitHub release. To draft a release:
+1. Go to the GitHub repo → Releases → Draft a new release → "Generate release notes".
+2. Or, enable GitHub Actions to have drafts created automatically from PRs and commits.
+
+## 🔐 Security
+
+The application implements several security features:
+- **Encryption**: AES-GCM encryption for sensitive data
+- **Session Management**: Timeout for inactive users
+- **Supabase**: All authentication and user data is securely managed by Supabase
+- **Input Sanitization**: XSS attack prevention
+- **Secure Storage**: No sensitive tokens stored in localStorage; only minimal session info is kept
+
 ## 💻 Technology Stack
 
 - **Frontend**: React, TypeScript, TailwindCSS
 - **UI Components**: Radix UI Components
 - **Desktop Framework**: Electron
 - **Build Tool**: Vite
-- **Authentication**: JWT-based authentication
-- **Encryption**: AES-GCM for sensitive data
 - **Charts**: Recharts
 - **State Management**: React Query, Context API
 
@@ -87,27 +123,22 @@ avilasha-2/
     └── images/              # Screenshots and images
 ```
 
-## 🔐 Security
+## 🚀 Recent Updates (April 2025)
 
-The application implements several security features:
-- **Encryption**: AES-GCM encryption for sensitive data
-- **Session Management**: Timeout for inactive users
-- **Rate Limiting**: Protection against API abuse
-- **Input Sanitization**: XSS attack prevention
-- **Secure Storage**: Protected local storage for credentials
+- **Logo Update**: Switched from PNG to modern SVG logo (`public/Avilasha.svg`) for sharper visuals and better scalability across all screens.
+- **Settings Page Usability**: The Settings page is now always visible, even without a connected wallet. A warning banner and wallet connect prompt are shown if needed.
+- **Social Login**: Added Google, X (Twitter), and GitHub login buttons to the Auth page for easier sign-up and sign-in.
+- **UI Enhancements**: Improved fallback logic for logo display and made social login buttons visually appealing and accessible.
+- **Clean Code**: Addressed lint errors and improved code structure for wallet and settings management.
 
-## 🔄 Workflow
+## 🖼️ Logo Usage
+- The SVG logo is loaded using a relative path (`Avilasha.svg`). Ensure the file is present in the `public` directory.
+- If the logo fails to load, a fallback avatar or nothing is shown (depending on the page).
 
-![Workflow Diagram](docs/images/workflow-placeholder.png)
-
-### User Experience Flow
-
-1. **Authentication**: Secure login with multi-factor authentication
-2. **Dashboard**: Overview of portfolio performance
-3. **Asset Management**: Add, remove, and track crypto assets
-4. **Analytics**: Detailed portfolio analytics
-5. **Wallets**: Integration with multiple crypto wallets
-6. **Settings**: Customize your experience
+## 🛠️ How to Update/Run
+1. Place `Avilasha.svg` in the `public` directory.
+2. Start the app with `npm run dev` for development or `npm run build` for production.
+3. Social login features require correct Supabase OAuth setup for Google, GitHub, and Twitter (X).
 
 ## 👥 Contributing
 

@@ -1,10 +1,13 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, MessageSquare, Mic, Bell, User } from 'lucide-react';
 import WindowControls from './WindowControls';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
+import { walletService } from '@/services/wallet.service';
+import { setSelectedWallet } from '@/services/selectedWallet';
+import WalletDropdown from './WalletDropdown';
 
 interface HeaderProps {
   onTrackWallet: () => void;
@@ -13,7 +16,40 @@ interface HeaderProps {
 const Header = ({ onTrackWallet }: HeaderProps) => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { toast } = useToast();
-  
+  const [wallets, setWallets] = useState([]);
+  const [selectedWalletIdx, setSelectedWalletIdx] = useState(0);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      if (allWallets.length) setSelectedWallet(allWallets[selectedWalletIdx]);
+    }
+    fetchWallets();
+  }, []);
+
+  useEffect(() => {
+    if (wallets.length) setSelectedWallet(wallets[selectedWalletIdx]);
+  }, [selectedWalletIdx, wallets]);
+
+  const handleWalletConnect = () => setShowWalletModal(true);
+
+  const handleSelectWallet = (idx: number) => {
+    setSelectedWalletIdx(idx);
+    setSelectedWallet(wallets[idx]);
+  };
+
+  const handleRemoveWallet = async (idx: number) => {
+    const addr = wallets[idx].address;
+    await walletService.removeWallet(addr);
+    const updated = await walletService.getAllWallets?.() || [];
+    setWallets(updated);
+    if (selectedWalletIdx >= updated.length) setSelectedWalletIdx(0);
+    if (updated.length) setSelectedWallet(updated[0]);
+    else setSelectedWallet(null);
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-background border-b border-border">
       <div className="flex h-full items-center justify-between pl-16 pr-0">
@@ -39,18 +75,32 @@ const Header = ({ onTrackWallet }: HeaderProps) => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2 transition-all duration-300 hover:shadow-md"
-            onClick={() => toast({
-              title: "Connected Wallet",
-              description: "Your Main Wallet is connected and synced",
-            })}
-          >
-            <Wallet size={16} />
-            <span>Main Wallet</span>
-          </Button>
-          
+          {wallets.length ? (
+            <WalletDropdown
+              wallets={wallets}
+              selectedWalletIdx={selectedWalletIdx}
+              onSelect={handleSelectWallet}
+              onRemove={handleRemoveWallet}
+            />
+          ) : (
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 transition-all duration-300 hover:shadow-md"
+              onClick={handleWalletConnect}
+            >
+              <Wallet size={16} />
+              <span>Connect Wallet</span>
+            </Button>
+          )}
+          {showWalletModal && (
+            <WalletConnectModal onConnect={() => {
+              setShowWalletModal(false);
+              (async () => {
+                const allWallets = await walletService.getAllWallets?.() || [];
+                setWallets(allWallets);
+              })();
+            }} />
+          )}
           <Button 
             variant="ghost" 
             size="icon"

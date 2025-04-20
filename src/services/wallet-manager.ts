@@ -133,13 +133,13 @@ class WalletManager {
   /**
    * Load wallet data from storage
    */
-  private loadFromStorage(): void {
+  private async loadFromStorage(): Promise<void> {
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
         // Load encrypted wallet connections
         const encryptedWallets = localStorage.getItem(this.WALLETS_STORAGE_KEY);
         if (encryptedWallets) {
-          const decrypted = securityService.decrypt(encryptedWallets);
+          const decrypted = await securityService.decrypt(encryptedWallets);
           if (decrypted) {
             this.walletConnections = JSON.parse(decrypted);
           }
@@ -148,7 +148,7 @@ class WalletManager {
         // Load transaction history
         const encryptedTx = localStorage.getItem(this.TRANSACTIONS_STORAGE_KEY);
         if (encryptedTx) {
-          const decrypted = securityService.decrypt(encryptedTx);
+          const decrypted = await securityService.decrypt(encryptedTx);
           if (decrypted) {
             this.transactions = JSON.parse(decrypted);
           }
@@ -174,17 +174,17 @@ class WalletManager {
   /**
    * Save wallet data to secure storage
    */
-  private saveToStorage(): void {
+  private async saveToStorage(): Promise<void> {
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
         // Encrypt and save wallet connections
         const walletsJson = JSON.stringify(this.walletConnections);
-        const encryptedWallets = securityService.encrypt(walletsJson);
+        const encryptedWallets = await securityService.encrypt(walletsJson);
         localStorage.setItem(this.WALLETS_STORAGE_KEY, encryptedWallets);
 
         // Encrypt and save transaction history
         const txJson = JSON.stringify(this.transactions);
-        const encryptedTx = securityService.encrypt(txJson);
+        const encryptedTx = await securityService.encrypt(txJson);
         localStorage.setItem(this.TRANSACTIONS_STORAGE_KEY, encryptedTx);
 
         // Save fiat conversion preferences
@@ -245,7 +245,7 @@ class WalletManager {
   /**
    * Add a new wallet connection
    */
-  addWallet(wallet: Omit<WalletConnection, 'id'>): WalletConnection {
+  async addWallet(wallet: Omit<WalletConnection, 'id'>): Promise<WalletConnection> {
     // Generate a unique ID for the wallet
     const id = crypto.randomUUID ? crypto.randomUUID() : `wallet_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     
@@ -256,7 +256,7 @@ class WalletManager {
     };
     
     this.walletConnections.push(newWallet);
-    this.saveToStorage();
+    await this.saveToStorage();
     
     // Fetch initial balance
     this.refreshWalletBalance(id);
@@ -526,7 +526,7 @@ class WalletManager {
       // Generate a mock address based on the wallet type and chain
       const mockAddress = this.generateMockAddress(chain);
       
-      const newWallet = this.addWallet({
+      const newWallet = await this.addWallet({
         name: `${type === 'ledger' ? 'Ledger' : 'Trezor'} ${chain}`,
         walletTypeId: type,
         address: mockAddress,

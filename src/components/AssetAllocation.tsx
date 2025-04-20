@@ -1,6 +1,11 @@
-
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
+
+interface Token {
+  name?: string;
+  symbol: string;
+  valueUSD: number;
+}
 
 interface Asset {
   name: string;
@@ -9,20 +14,41 @@ interface Asset {
   color: string;
 }
 
-const assets: Asset[] = [
-  { name: 'Bitcoin', symbol: 'BTC', percentage: 45, color: 'bg-crypto-bitcoin' },
-  { name: 'Ethereum', symbol: 'ETH', percentage: 30, color: 'bg-crypto-ethereum' },
-  { name: 'Solana', symbol: 'SOL', percentage: 15, color: 'bg-crypto-solana' },
-  { name: 'Others', symbol: '', percentage: 10, color: 'bg-crypto-other' },
-];
+interface AssetAllocationProps {
+  wallet: { tokens: Token[] };
+}
 
-const AssetAllocation = () => {
+/**
+ * AssetAllocation displays the wallet's asset distribution.
+ * - Uses wallet prop for dynamic allocation
+ * - Shows message if no assets
+ * - Type safe
+ */
+const AssetAllocation: React.FC<AssetAllocationProps> = ({ wallet }) => {
+  // Example: derive asset allocation from wallet (if wallet has tokens)
+  const tokens = wallet.tokens || [];
+  const totalValue = tokens.reduce((sum, t) => sum + t.valueUSD, 0);
+  const allocation = totalValue > 0
+    ? tokens.map((t) => ({
+        name: t.name || t.symbol,
+        symbol: t.symbol,
+        percentage: Math.round((t.valueUSD / totalValue) * 100),
+        color: 'bg-crypto-other' // You may map symbol to color if desired
+      }))
+    : [];
+
+  if (!wallet) {
+    return <div className="bg-card rounded-xl p-4 shadow-sm">No wallet selected.</div>;
+  }
+  if (!allocation.length) {
+    return <div className="bg-card rounded-xl p-4 shadow-sm">No asset data available for this wallet.</div>;
+  }
+
   return (
     <div className="bg-card rounded-xl p-4 shadow-sm">
       <h3 className="text-lg font-medium mb-4">Asset Allocation</h3>
-      
       <div className="space-y-4">
-        {assets.map((asset) => (
+        {allocation.map((asset) => (
           <div key={asset.symbol || asset.name}>
             <div className="flex justify-between items-center mb-1">
               <div className="flex items-center gap-2">

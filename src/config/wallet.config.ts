@@ -8,7 +8,8 @@ export const WALLET_CONFIG = {
     'binance-smart-chain',
     'polygon',
     'avalanche',
-    'solana'
+    'solana',
+    'sui'
   ],
   refreshInterval: 30000, // 30 seconds
   priceUpdateInterval: 60000, // 1 minute

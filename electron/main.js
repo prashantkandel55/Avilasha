@@ -1,3 +1,11 @@
+process.on('uncaughtException', function (err) {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', function (reason, promise) {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 async function initialize() {
   try {
     const electron = await import('electron');
@@ -8,8 +16,8 @@ async function initialize() {
     const windowStateKeeper = (await import('electron-window-state')).default;
     // Devtools installer import fix for ESM/CJS compatibility (strict)
     const devtoolsInstaller = await import('electron-devtools-installer');
-    const installExtension = devtoolsInstaller.default;
-    const { REACT_DEVELOPER_TOOLS } = devtoolsInstaller;
+    const installExtension = devtoolsInstaller.default || devtoolsInstaller;
+    const { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } = devtoolsInstaller;
     const { default: electronDebug } = await import('electron-debug');
 
     const __filename = fileURLToPath(import.meta.url);
@@ -56,17 +64,32 @@ async function initialize() {
       try {
         // Temporarily disable hot reload as it's causing issues
         console.log('Hot reloading disabled temporarily');
-        /*
-        const reloader = await import('electron-reloader');
-        reloader.default(import.meta.url, {
-          debug: true,
-          watchRenderer: true
-        });
-        console.log('Hot reloading enabled');
-        */
-      } catch (error) {
-        console.log('Error setting up hot reloading:', error);
+        // Robust DevTools installer import for ESM/CJS compatibility
+        const devtoolsInstaller = await import('electron-devtools-installer');
+        const installExtension = devtoolsInstaller.default || devtoolsInstaller;
+        const REACT_DEVELOPER_TOOLS = devtoolsInstaller.REACT_DEVELOPER_TOOLS;
+        const REDUX_DEVTOOLS = devtoolsInstaller.REDUX_DEVTOOLS;
+        if (typeof installExtension === 'function') {
+          installExtension(REACT_DEVELOPER_TOOLS)
+            .then((name) => console.log(`Added Extension:  ${name}`))
+            .catch((err) => console.log('An error occurred: ', err));
+          installExtension(REDUX_DEVTOOLS)
+            .then((name) => console.log(`Added Extension:  ${name}`))
+            .catch((err) => console.log('An error occurred: ', err));
+        } else {
+          console.warn('Devtools installer is not a function:', installExtension);
+        }
+      } catch (err) {
+        console.log('Error installing devtools:', err);
       }
+      /*
+      const reloader = await import('electron-reloader');
+      reloader.default(import.meta.url, {
+        debug: true,
+        watchRenderer: true
+      });
+      console.log('Hot reloading enabled');
+      */
     }
 
     // Make this function async to use await inside
@@ -88,9 +111,9 @@ async function initialize() {
 
       // Install React DevTools
       if (isDev) {
-        installExtension(REACT_DEVELOPER_TOOLS)
-          .then((name) => console.log(`Added Extension: ${name}`))
-          .catch((err) => console.log('An error occurred: ', err));
+        // installExtension(REACT_DEVELOPER_TOOLS)
+        //   .then((name) => console.log(`Added Extension: ${name}`))
+        //   .catch((err) => console.log('An error occurred: ', err));
       }
 
       // Load the previous state with fallback to defaults
@@ -113,7 +136,7 @@ async function initialize() {
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
-          preload: path.join(__dirname, 'preload.js'),
+          preload: path.join(__dirname, 'preload.cjs'),
           webviewTag: true,
           webSecurity: !isDev, // Disable webSecurity in development to allow loading local resources
           allowRunningInsecureContent: isDev,
@@ -184,8 +207,8 @@ async function initialize() {
 
         console.log('Trying to connect to Vite development server...');
         
-        // Try to connect to different ports
-        const possiblePorts = [3001, 3002, 3003];
+        // Try to connect to different ports (prefer 3003, then 3001, 3002)
+        const possiblePorts = [3003, 3001, 3002];
         let connected = false;
         
         for (const port of possiblePorts) {
@@ -200,7 +223,7 @@ async function initialize() {
               console.log(`Successfully connected to Vite server on port ${port}`);
             }
           } catch (error) {
-            console.log(`Error connecting to port ${port}:`, error.message);
+            // Just try next port
           }
         }
         

@@ -1,11 +1,12 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LivePriceCard } from '@/components/LivePriceCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { TrendingUp, TrendingDown, Search, BarChart, LineChart, Percent } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart as RechartsBarChart, Bar } from 'recharts';
+import { walletService } from '@/services/wallet.service';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const priceData = [
   { name: 'Jan', value: 35000 },
@@ -81,13 +82,53 @@ const cryptoMarketData = [
 ];
 
 const MarketAnalysis = () => {
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
   const filteredData = cryptoMarketData.filter(
     crypto => crypto.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center p-10">Loading market analysis...</div>;
+  }
+
+  if (!wallets.length) {
+    return (
+      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
+        <p className="mb-4">Connect a wallet to view market analysis.</p>
+        <button
+          className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition"
+          onClick={() => setShowWalletModal(true)}
+        >
+          Connect Wallet
+        </button>
+        {showWalletModal && (
+          <WalletConnectModal onConnect={() => {
+            setShowWalletModal(false);
+            (async () => {
+              const allWallets = await walletService.getAllWallets?.() || [];
+              setWallets(allWallets);
+            })();
+          }} />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="mb-6">
@@ -201,11 +242,6 @@ const MarketAnalysis = () => {
               'MATICUSDT'
             ]}
             title="Top Cryptocurrencies"
-            showDetails={true}
-            maxItems={10}
-              'LINKUSDT'
-            ]}
-            title="Top 10 Cryptocurrencies"
             showDetails={true}
             maxItems={10}
           />

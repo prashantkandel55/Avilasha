@@ -70,7 +70,9 @@ class SecurityService {
     }
   }
 
-  /**
+  /**## 🔄 Workflow
+  
+  ![Workflow Diagram](docs/images/workflow-diagram.png)
    * Setup session timeout monitoring
    */
   private setupSessionTimeout(): void {
@@ -622,53 +624,37 @@ class SecurityService {
   /**
    * Encrypt data with a secure encryption key
    * @param data String data to encrypt
-   * @returns Encrypted string
+   * @returns Promise resolving to encrypted string (JSON format)
    */
-  encrypt(data: string): string {
+  async encrypt(data: string): Promise<string> {
     if (!data) return '';
-    
     try {
-      const encryptPromise = this.encryptData(data);
-      // For synchronous usage, we'll return a placeholder
-      // The real implementation should use await, but for compatibility
-      // we're providing a synchronous interface for now
-      return JSON.stringify({
-        encryptedData: data, // Fallback to unencrypted data
-        isEncrypted: false
-      });
+      const { encryptedData, iv } = await this.encryptData(data);
+      return JSON.stringify({ encryptedData, iv, isEncrypted: true });
     } catch (error) {
       console.error('Encryption error:', error);
-      return data;
+      return JSON.stringify({ encryptedData: data, isEncrypted: false });
     }
   }
-  
+
   /**
    * Decrypt previously encrypted data
    * @param encryptedData String that was encrypted with the encrypt method
-   * @returns Decrypted string or original string if decryption fails
+   * @returns Promise resolving to decrypted string or original string if decryption fails
    */
-  decrypt(encryptedData: string): string {
+  async decrypt(encryptedData: string): Promise<string> {
     if (!encryptedData) return '';
-    
     try {
-      // Try to parse as JSON to check if it's our encrypted format
       const data = JSON.parse(encryptedData);
       if (data && typeof data === 'object') {
         if (data.isEncrypted === false) {
-          // Data wasn't actually encrypted, just return the original
           return data.encryptedData;
         } else if (data.encryptedData && data.iv) {
-          // This is properly encrypted data
-          const decryptPromise = this.decryptData(data.encryptedData, data.iv);
-          // For synchronous usage, fallback to the encrypted data
-          return data.encryptedData;
+          return await this.decryptData(data.encryptedData, data.iv);
         }
       }
-      
-      // If it's not our format, return as is
       return encryptedData;
     } catch (error) {
-      // If it's not valid JSON, it's not our encrypted format
       console.error('Decryption error:', error);
       return encryptedData;
     }

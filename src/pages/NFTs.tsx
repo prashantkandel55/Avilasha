@@ -58,13 +58,17 @@ const NFTs = () => {
   const [loading, setLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
+  // Add real-time polling for NFTs
   useEffect(() => {
-    async function fetchWallets() {
+    let interval: NodeJS.Timeout;
+    async function fetchNFTs() {
       const allWallets = await walletService.getAllWallets?.() || [];
       setWallets(allWallets);
       setLoading(false);
     }
-    fetchWallets();
+    fetchNFTs();
+    interval = setInterval(fetchNFTs, 15000); // poll every 15s
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

@@ -68,58 +68,43 @@ const PriceAlertModal: React.FC<PriceAlertModalProps> = ({ open, onOpenChange, c
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] rounded-lg shadow-inner bg-gray-50">
         <DialogHeader>
-          <DialogTitle>Create Price Alert</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl font-semibold">Create Price Alert</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground mb-2">
             Get notified when the price reaches your target.
           </DialogDescription>
         </DialogHeader>
-        
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           {coin && (
             <div className="flex items-center space-x-3 mb-4">
-              <img src={coin.image} alt={coin.name} className="w-8 h-8 rounded-full" />
-              <div>
-                <div className="font-medium">{coin.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  Current price: ${coin.current_price.toLocaleString()}
-                </div>
-              </div>
+              <span className="font-semibold text-sm bg-primary/10 px-2 py-1 rounded text-primary">{coin.name} ({coin.symbol.toUpperCase()})</span>
+              <span className="text-xs text-gray-500">Current: ${coin.current_price}</span>
             </div>
           )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="price">Target Price (USD)</Label>
+          <div className="grid grid-cols-1 gap-2">
+            <Label className="text-xs font-semibold">Alert Condition</Label>
+            <RadioGroup value={condition} onValueChange={setCondition} className="flex gap-4">
+              <RadioGroupItem value="above" id="above" />
+              <Label htmlFor="above" className="text-xs cursor-pointer">Above</Label>
+              <RadioGroupItem value="below" id="below" />
+              <Label htmlFor="below" className="text-xs cursor-pointer">Below</Label>
+            </RadioGroup>
+            <Label className="text-xs font-semibold mt-2">Target Price</Label>
             <Input
-              id="price"
               type="number"
-              step="any"
               min="0"
+              step="0.01"
               value={targetPrice}
-              onChange={(e) => setTargetPrice(e.target.value)}
-              placeholder="Enter target price"
+              onChange={e => setTargetPrice(e.target.value)}
+              className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-primary/30"
+              placeholder="Enter price"
               required
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label>Alert Condition</Label>
-            <RadioGroup value={condition} onValueChange={(value) => setCondition(value as 'above' | 'below')}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="above" id="above" />
-                <Label htmlFor="above">Price goes above target</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="below" id="below" />
-                <Label htmlFor="below">Price goes below target</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">Create Alert</Button>
+          <DialogFooter className="flex justify-end gap-2 mt-4">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" className="bg-primary text-white rounded hover:bg-primary/90 transition">Create Alert</Button>
           </DialogFooter>
         </form>
       </DialogContent>

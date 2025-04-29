@@ -40,28 +40,27 @@ const News = () => {
     fetchTopHeadlines();
   }, []);
 
-  const fetchNews = async (page = 1) => {
-    try {
-      setError(null);
-      const latestNews = await newsApiService.getLatestNews(page);
-      
-      if (page === 1) {
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    async function fetchNews() {
+      try {
+        setError(null);
+        const latestNews = await newsApiService.getLatestNews(1);
         setNews(latestNews);
-      } else {
-        setNews(prev => [...prev, ...latestNews]);
+      } catch (err) {
+        setError('Failed to load news. Please try again later.');
+        toast({
+          title: 'Error',
+          description: 'Failed to load news data',
+          variant: 'destructive',
+        });
       }
-      
-      setCurrentPage(page);
-    } catch (err) {
-      setError('Failed to load news. Please try again later.');
-      toast({
-        title: 'Error',
-        description: 'Failed to load news data',
-        variant: 'destructive',
-      });
     }
-  };
-  
+    fetchNews();
+    interval = setInterval(fetchNews, 15000); // poll every 15s
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchTopHeadlines = async () => {
     try {
       const headlines = await newsApiService.getTopHeadlines();

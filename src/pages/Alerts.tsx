@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -92,7 +91,19 @@ const Alerts = () => {
     condition: 'above',
     value: '',
   });
-  
+
+  // Add real-time polling for alerts
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    async function fetchAlerts() {
+      // Fetch alerts from backend or local storage
+      setAlerts(mockAlerts); // Replace with real fetch if available
+    }
+    fetchAlerts();
+    interval = setInterval(fetchAlerts, 15000); // poll every 15s
+    return () => clearInterval(interval);
+  }, []);
+
   const handleDeleteAlert = (id: string) => {
     setAlerts(alerts.filter(alert => alert.id !== id));
     toast({
@@ -100,7 +111,7 @@ const Alerts = () => {
       description: "The alert has been removed",
     });
   };
-  
+
   const handleToggleSnooze = (id: string) => {
     setAlerts(alerts.map(alert => {
       if (alert.id === id) {
@@ -109,20 +120,20 @@ const Alerts = () => {
       }
       return alert;
     }));
-    
+
     const alert = alerts.find(a => a.id === id);
     const action = alert?.status === 'snoozed' ? 'activated' : 'snoozed';
-    
+
     toast({
       title: `Alert ${action}`,
       description: `The alert for ${alert?.asset} has been ${action}`,
     });
   };
-  
+
   const handleCreateAlert = () => {
     const id = (alerts.length + 1).toString();
     const createdAt = new Date().toISOString().split('T')[0];
-    
+
     const newAlertObj: Alert = {
       id,
       type: newAlert.type as any,
@@ -132,15 +143,15 @@ const Alerts = () => {
       status: 'active',
       createdAt
     };
-    
+
     setAlerts([newAlertObj, ...alerts]);
     setIsCreating(false);
-    
+
     toast({
       title: "Alert Created",
       description: `New ${newAlert.type} alert for ${newAlert.asset} created successfully`,
     });
-    
+
     // Reset form
     setNewAlert({
       type: 'price',
@@ -149,7 +160,7 @@ const Alerts = () => {
       value: '',
     });
   };
-  
+
   const getAlertIcon = (type: string) => {
     switch (type) {
       case 'price': return <BarChart2 className="h-4 w-4" />;
@@ -160,14 +171,14 @@ const Alerts = () => {
       default: return <Bell className="h-4 w-4" />;
     }
   };
-  
+
   return (
     <div className="animate-fade-in">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-1">Alerts</h1>
         <p className="text-muted-foreground">Set up and manage custom alerts for your portfolio</p>
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
           <div className="flex justify-between items-center">
@@ -180,7 +191,7 @@ const Alerts = () => {
                 <TabsTrigger value="security">Security</TabsTrigger>
               </TabsList>
             </Tabs>
-            
+
             <Dialog open={isCreating} onOpenChange={setIsCreating}>
               <DialogTrigger asChild>
                 <Button>
@@ -195,13 +206,13 @@ const Alerts = () => {
                     Set up a custom alert for your assets
                   </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <Label>Alert Type</Label>
-                    <Select 
+                    <Select
                       value={newAlert.type}
-                      onValueChange={(value) => setNewAlert({...newAlert, type: value})}
+                      onValueChange={(value) => setNewAlert({ ...newAlert, type: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
@@ -215,12 +226,12 @@ const Alerts = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Asset</Label>
                     <Select
                       value={newAlert.asset}
-                      onValueChange={(value) => setNewAlert({...newAlert, asset: value})}
+                      onValueChange={(value) => setNewAlert({ ...newAlert, asset: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select asset" />
@@ -235,12 +246,12 @@ const Alerts = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Condition</Label>
                     <Select
                       value={newAlert.condition}
-                      onValueChange={(value) => setNewAlert({...newAlert, condition: value})}
+                      onValueChange={(value) => setNewAlert({ ...newAlert, condition: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select condition" />
@@ -279,22 +290,22 @@ const Alerts = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Value</Label>
-                    <Input 
+                    <Input
                       placeholder={
-                        newAlert.type === 'price' ? 'e.g. $45,000' : 
-                        newAlert.type === 'volume' ? 'e.g. 50%' :
-                        newAlert.type === 'news' ? 'e.g. upgrade, hardfork' :
-                        newAlert.type === 'security' ? 'e.g. any amount' :
-                        'e.g. > 100 BTC'
+                        newAlert.type === 'price' ? 'e.g. $45,000' :
+                          newAlert.type === 'volume' ? 'e.g. 50%' :
+                            newAlert.type === 'news' ? 'e.g. upgrade, hardfork' :
+                              newAlert.type === 'security' ? 'e.g. any amount' :
+                                'e.g. > 100 BTC'
                       }
                       value={newAlert.value}
-                      onChange={(e) => setNewAlert({...newAlert, value: e.target.value})}
+                      onChange={(e) => setNewAlert({ ...newAlert, value: e.target.value })}
                     />
                   </div>
-                  
+
                   {newAlert.type === 'price' && (
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -308,7 +319,7 @@ const Alerts = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Switch id="notification" defaultChecked />
@@ -320,7 +331,7 @@ const Alerts = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsCreating(false)}>Cancel</Button>
                   <Button onClick={handleCreateAlert}>Create Alert</Button>
@@ -328,7 +339,7 @@ const Alerts = () => {
               </DialogContent>
             </Dialog>
           </div>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Your Active Alerts</CardTitle>
@@ -342,11 +353,11 @@ const Alerts = () => {
                   <div key={alert.id} className="flex items-center justify-between p-4 border rounded-md">
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-full ${
-                        alert.type === 'price' ? 'bg-blue-500/10' : 
-                        alert.type === 'volume' ? 'bg-green-500/10' : 
-                        alert.type === 'news' ? 'bg-amber-500/10' : 
-                        alert.type === 'security' ? 'bg-red-500/10' : 
-                        'bg-purple-500/10'
+                        alert.type === 'price' ? 'bg-blue-500/10' :
+                          alert.type === 'volume' ? 'bg-green-500/10' :
+                            alert.type === 'news' ? 'bg-amber-500/10' :
+                              alert.type === 'security' ? 'bg-red-500/10' :
+                                'bg-purple-500/10'
                       }`}>
                         {getAlertIcon(alert.type)}
                       </div>
@@ -355,21 +366,21 @@ const Alerts = () => {
                         <div className="text-xs text-muted-foreground capitalize">{alert.type} alert • Created {alert.createdAt}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <div className="text-right mr-4">
                         <div className="font-medium flex items-center">
-                          {alert.condition === 'above' ? <ArrowUp className="mr-1 h-3 w-3" /> : 
-                           alert.condition === 'below' ? <ArrowDown className="mr-1 h-3 w-3" /> : 
-                           alert.condition === 'increase' ? <TrendingUp className="mr-1 h-3 w-3" /> : 
-                           null}
-                          {alert.condition === 'above' ? 'Above ' : 
-                           alert.condition === 'below' ? 'Below ' : 
-                           alert.condition === 'increase' ? 'Increase ' : 
-                           alert.condition === 'keyword' ? 'Keywords: ' : 
-                           alert.condition === 'transfer' ? 'Detect ' : 
-                           alert.condition === 'movement' ? 'Detect ' : 
-                           ''}
+                          {alert.condition === 'above' ? <ArrowUp className="mr-1 h-3 w-3" /> :
+                            alert.condition === 'below' ? <ArrowDown className="mr-1 h-3 w-3" /> :
+                              alert.condition === 'increase' ? <TrendingUp className="mr-1 h-3 w-3" /> :
+                                null}
+                          {alert.condition === 'above' ? 'Above ' :
+                            alert.condition === 'below' ? 'Below ' :
+                              alert.condition === 'increase' ? 'Increase ' :
+                                alert.condition === 'keyword' ? 'Keywords: ' :
+                                  alert.condition === 'transfer' ? 'Detect ' :
+                                    alert.condition === 'movement' ? 'Detect ' :
+                                      ''}
                           {alert.value}
                         </div>
                         {alert.lastTriggered && (
@@ -378,19 +389,19 @@ const Alerts = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       <Badge variant="outline" className={`
-                        ${alert.status === 'active' ? 'bg-green-500/10 text-green-500' : 
-                          alert.status === 'triggered' ? 'bg-amber-500/10 text-amber-500' : 
-                          'bg-gray-500/10 text-gray-500'}
+                        ${alert.status === 'active' ? 'bg-green-500/10 text-green-500' :
+                          alert.status === 'triggered' ? 'bg-amber-500/10 text-amber-500' :
+                            'bg-gray-500/10 text-gray-500'}
                       `}>
                         {alert.status}
                       </Badge>
-                      
+
                       <div className="flex">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8"
                           onClick={() => handleToggleSnooze(alert.id)}
                         >
@@ -400,16 +411,16 @@ const Alerts = () => {
                             <Clock className="h-4 w-4" />
                           )}
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-red-500"
                           onClick={() => handleDeleteAlert(alert.id)}
                         >
@@ -419,7 +430,7 @@ const Alerts = () => {
                     </div>
                   </div>
                 ))}
-                
+
                 {alerts.length === 0 && (
                   <div className="text-center py-6">
                     <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-4">
@@ -436,7 +447,7 @@ const Alerts = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -451,7 +462,7 @@ const Alerts = () => {
                 </div>
                 <Switch defaultChecked />
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div className="space-y-0.5">
                   <Label className="text-base">Email Notifications</Label>
@@ -459,7 +470,7 @@ const Alerts = () => {
                 </div>
                 <Switch defaultChecked />
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div className="space-y-0.5">
                   <Label className="text-base">SMS Notifications</Label>
@@ -467,7 +478,7 @@ const Alerts = () => {
                 </div>
                 <Switch />
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <div className="space-y-0.5">
                   <Label className="text-base">Quiet Hours</Label>
@@ -483,7 +494,7 @@ const Alerts = () => {
               </Button>
             </CardFooter>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Alert Templates</CardTitle>
@@ -503,7 +514,7 @@ const Alerts = () => {
                   <TrendingUp className="mr-2 h-4 w-4" />
                   BTC above $50,000
                 </Button>
-                
+
                 <Button variant="outline" className="w-full justify-start" onClick={() => {
                   setNewAlert({
                     type: 'price',
@@ -516,7 +527,7 @@ const Alerts = () => {
                   <TrendingDown className="mr-2 h-4 w-4" />
                   ETH below $2,000
                 </Button>
-                
+
                 <Button variant="outline" className="w-full justify-start" onClick={() => {
                   setNewAlert({
                     type: 'volume',
@@ -529,7 +540,7 @@ const Alerts = () => {
                   <Volume2 className="mr-2 h-4 w-4" />
                   BTC volume spike (50%+)
                 </Button>
-                
+
                 <Button variant="outline" className="w-full justify-start" onClick={() => {
                   setNewAlert({
                     type: 'security',
@@ -545,7 +556,7 @@ const Alerts = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Recent Alerts</CardTitle>

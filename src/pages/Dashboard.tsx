@@ -12,6 +12,8 @@ import ProfilePoints from '../components/ProfilePoints';
 import { walletService } from '@/services/wallet.service';
 import { WalletConnectModal } from '@/components/WalletConnectModal';
 import { getSelectedWallet, subscribeSelectedWallet } from '@/services/selectedWallet';
+import AvilashaLogo from '/Avilasha.svg';
+import CryptoNewsWidget from '../components/CryptoNewsWidget';
 
 const Dashboard = () => {
   const [wallets, setWallets] = useState([]);
@@ -19,6 +21,11 @@ const Dashboard = () => {
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [selectedWallet, setSelectedWalletState] = useState(getSelectedWallet());
+
+  const [portfolioSummary, setPortfolioSummary] = useState<{totalValue: number, percentChange: number}>({totalValue: 0, percentChange: 0});
+  const [topAssets, setTopAssets] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [loadingWidgets, setLoadingWidgets] = useState(true);
 
   useEffect(() => {
     const unsub = subscribeSelectedWallet((wallet) => setSelectedWalletState(wallet));
@@ -32,6 +39,27 @@ const Dashboard = () => {
       setLoading(false);
     }
     fetchWallets();
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    async function fetchDashboardData() {
+      setLoadingWidgets(true);
+      try {
+        const walletsResp = await import('./PortfolioAnalytics');
+        const fetchFn = walletsResp.fetchWalletsAndPricesAndHistoryAndActivity;
+        if (fetchFn) {
+          const { wallets, totalValue, percentChange, topAssets, recentActivity } = await fetchFn();
+          setPortfolioSummary({ totalValue, percentChange });
+          setTopAssets(topAssets);
+          setRecentActivity(recentActivity);
+        }
+      } catch (e) {}
+      setLoadingWidgets(false);
+    }
+    fetchDashboardData();
+    interval = setInterval(fetchDashboardData, 15000); // poll every 15s
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -63,54 +91,57 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in">
-      <div className="flex justify-between items-center mb-6 slide-up-animation">
+    <div className="relative w-full animate-fade-in">
+      {/* Avilasha Logo, Greeting, and Animated Header */}
+      <div className="flex items-center gap-4 mb-6 animate-float">
+        <img src={AvilashaLogo} alt="Avilasha Logo" className="w-14 h-14 rounded-full shadow-neon bg-black/40 p-1" style={{ filter: 'drop-shadow(0 0 12px #00ffb3)' }} />
         <div>
-          <h1 className="text-3xl font-bold mb-1">Welcome to Dashboard</h1>
-          <p className="text-muted-foreground">Track your crypto wallets and monitor market activity</p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2 transition-all duration-300 hover:bg-primary/10"
-          onClick={() => setNotificationModalOpen(true)}
-        >
-          <Bell size={16} />
-          <span>Notifications</span>
-        </Button>
-      </div>
-      {/* Profile Points for Airdrop Eligibility */}
-      <div className="mb-6">
-        <ProfilePoints />
-      </div>
-      <PortfolioStatsRow />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-2 transition-all duration-500 hover:shadow-lg rounded-lg">
-          <WalletDashboard className="mb-6" wallet={selectedWallet} />
-          <PortfolioChart wallet={selectedWallet} />
-        </div>
-        <div className="transition-all duration-500 hover:shadow-lg rounded-lg">
-          <AssetAllocation wallet={selectedWallet} />
+          <h1 className="text-3xl font-extrabold text-primary drop-shadow-glow tracking-tight">Welcome to Avilasha</h1>
+          <span className="text-secondary-foreground text-base">Your smart crypto dashboard</span>
         </div>
       </div>
-      
-      <div className="mb-6 fade-in-animation">
-        <TopAssets wallet={selectedWallet} />
+      {/* --- Enhanced Dashboard Grid --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <PortfolioStatsRow />
       </div>
-      
-      <div className="mb-6 fade-in-animation">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-lg font-medium">Top 10 Cryptocurrencies</h3>
-          <div className="text-sm text-muted-foreground">Real-time market data</div>
+      {/* --- Main Widgets Row --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="col-span-2 flex flex-col gap-6">
+          <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 transition-all hover:shadow-xl">
+            <PortfolioChart wallet={selectedWallet} />
+          </div>
+          <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 transition-all hover:shadow-xl">
+            <AssetAllocation wallet={selectedWallet} />
+          </div>
         </div>
-        <TopCryptos />
+        <div className="flex flex-col gap-6">
+          <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 flex flex-col items-center transition-all hover:shadow-xl">
+            <h3 className="font-bold mb-2">Top Assets</h3>
+            {loadingWidgets ? (
+              <div className="w-full animate-pulse flex flex-col gap-2">
+                <div className="h-4 bg-muted rounded w-2/3 mx-auto" />
+                <div className="h-4 bg-muted rounded w-1/2 mx-auto" />
+                <div className="h-4 bg-muted rounded w-1/3 mx-auto" />
+              </div>
+            ) : (
+              <ul className="text-xs w-full">
+                {topAssets.length === 0 ? <li>No assets</li> : topAssets.map((asset, idx) => (
+                  <li key={idx}>{asset.symbol}: {asset.amount}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 flex flex-col items-center transition-all hover:shadow-xl">
+            <ProfilePoints />
+          </div>
+        </div>
       </div>
-      
-      <NotificationSettingsModal 
-        open={notificationModalOpen} 
-        onClose={() => setNotificationModalOpen(false)} 
-      />
+      {/* --- News Feed Widget Row --- */}
+      <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 transition-all hover:shadow-xl mb-8">
+        <CryptoNewsWidget />
+      </div>
+      {/* --- Notification Modal --- */}
+      <NotificationSettingsModal open={notificationModalOpen} onClose={() => setNotificationModalOpen(false)} />
     </div>
   );
 };

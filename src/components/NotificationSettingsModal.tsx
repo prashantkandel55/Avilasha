@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
@@ -65,24 +64,27 @@ const NotificationSettingsModal = ({ open, onClose }: NotificationSettingsModalP
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent className="sm:max-w-md bg-card border-border rounded-lg shadow-inner p-2 mb-2">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Notification Settings</DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-4 py-2">
-          {settings.map((setting) => (
-            <div key={setting.id} className="flex items-center justify-between py-2">
+        <div className="divide-y divide-gray-200 bg-gray-50 rounded-lg shadow-inner p-2 mb-2">
+          {settings.map((setting, idx) => (
+            <div key={setting.id} className={`flex items-center justify-between py-4 px-2 transition ${idx % 2 === 0 ? 'bg-white/80' : 'bg-gray-100/80'} rounded-lg hover:shadow-sm`}>
               <div>
-                <h4 className="font-medium text-base">{setting.title}</h4>
-                <p className="text-sm text-muted-foreground">{setting.description}</p>
+                <h4 className="font-medium text-base text-primary mb-0.5">{setting.title}</h4>
+                <p className="text-xs text-muted-foreground leading-tight">{setting.description}</p>
               </div>
               <Switch 
                 checked={setting.enabled} 
-                onCheckedChange={() => toggleSetting(setting.id)} 
+                onCheckedChange={() => toggleSetting(setting.id)}
+                className="scale-110 focus:ring-2 focus:ring-primary/40"
               />
             </div>
           ))}
+        </div>
+        <div className="flex justify-end mt-2">
+          <button onClick={onClose} className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition">Close</button>
         </div>
       </DialogContent>
     </Dialog>

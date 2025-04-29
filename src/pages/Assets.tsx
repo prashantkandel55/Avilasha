@@ -91,12 +91,15 @@ const Assets = () => {
   const [showWalletModal, setShowWalletModal] = useState(false);
 
   useEffect(() => {
+    let interval: NodeJS.Timeout;
     async function fetchWallets() {
       const allWallets = await walletService.getAllWallets?.() || [];
       setWallets(allWallets);
       setLoading(false);
     }
     fetchWallets();
+    interval = setInterval(fetchWallets, 15000); // poll every 15s
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

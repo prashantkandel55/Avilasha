@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { cryptoService } from '@/services/crypto-service-integration';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,13 @@ const DeFi = () => {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const { toast } = useToast();
   
+  // DeFiLlama data states
+  const [protocols, setProtocols] = useState([]);
+  const [chainsTvl, setChainsTvl] = useState([]);
+  const [yieldPools, setYieldPools] = useState([]);
+  const [globalTvl, setGlobalTvl] = useState([]);
+  const [defiLoading, setDefiLoading] = useState(true);
+  
   useEffect(() => {
     async function fetchWallets() {
       const allWallets = await walletService.getAllWallets?.() || [];
@@ -22,6 +30,82 @@ const DeFi = () => {
       setLoading(false);
     }
     fetchWallets();
+    
+    // Fetch DeFi data from DeFiLlama API
+    async function fetchDeFiData() {
+      try {
+        setDefiLoading(true);
+        
+        // Fetch top protocols by TVL
+        const protocolsData = await cryptoService.getAllDeFiProtocols();
+        setProtocols(protocolsData.slice(0, 5)); // Show top 5 protocols
+        
+        // Fetch chains TVL
+        const chainsTvlData = await cryptoService.getChainsTvl();
+        setChainsTvl(chainsTvlData.slice(0, 5)); // Show top 5 chains
+        
+        // Fetch yield pools
+        const yieldPoolsData = await cryptoService.getYieldPools(5); // Get top 5 yield pools
+        setYieldPools(yieldPoolsData);
+        
+        // Fetch global TVL
+        const globalTvlData = await cryptoService.getGlobalTvl();
+        // Get last 30 days of data
+        const recentGlobalTvl = globalTvlData.slice(-30);
+        setGlobalTvl(recentGlobalTvl);
+      } catch (error) {
+        console.error('Error fetching DeFi data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch DeFi data. Using cached data if available.',
+          variant: 'destructive'
+        });
+      } finally {
+        setDefiLoading(false);
+      }
+    }
+    
+    fetchDeFiData();
+  }, []);
+
+  // Add real-time polling for DeFi data
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    async function fetchDeFi() {
+      // Fetch DeFi protocols, chains TVL, yield pools, global TVL, etc.
+      setDefiLoading(true);
+      try {
+        // Fetch top protocols by TVL
+        const protocolsData = await cryptoService.getAllDeFiProtocols();
+        setProtocols(protocolsData.slice(0, 5)); // Show top 5 protocols
+        
+        // Fetch chains TVL
+        const chainsTvlData = await cryptoService.getChainsTvl();
+        setChainsTvl(chainsTvlData.slice(0, 5)); // Show top 5 chains
+        
+        // Fetch yield pools
+        const yieldPoolsData = await cryptoService.getYieldPools(5); // Get top 5 yield pools
+        setYieldPools(yieldPoolsData);
+        
+        // Fetch global TVL
+        const globalTvlData = await cryptoService.getGlobalTvl();
+        // Get last 30 days of data
+        const recentGlobalTvl = globalTvlData.slice(-30);
+        setGlobalTvl(recentGlobalTvl);
+      } catch (error) {
+        console.error('Error fetching DeFi data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch DeFi data. Using cached data if available.',
+          variant: 'destructive'
+        });
+      } finally {
+        setDefiLoading(false);
+      }
+    }
+    fetchDeFi();
+    interval = setInterval(fetchDeFi, 15000); // poll every 15s
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

@@ -10,7 +10,7 @@
   ],
   "win": {
     "target": ["nsis"],
-    "icon": "public/avilasha.png"
+    "icon": "public/Avilasha.svg"
   },
   "nsis": {
     "oneClick": false,
@@ -19,10 +19,10 @@
   },
   "mac": {
     "target": ["dmg"],
-    "icon": "public/avilasha.png"
+    "icon": "public/Avilasha.svg"
   },
   "linux": {
     "target": ["AppImage"],
-    "icon": "public/avilasha.png"
+    "icon": "public/Avilasha.svg"
   }
 }

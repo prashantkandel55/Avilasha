@@ -14,6 +14,7 @@ interface WalletBalance {
   tokens: TokenBalance[];
   totalValueUSD: number;
   lastUpdated: number;
+  name?: string; // Add name property to WalletBalance interface
 }
 
 interface TokenBalance {
@@ -190,6 +191,16 @@ class WalletService {
     } catch (error) {
       console.error(`Error updating wallet ${address}:`, error);
     }
+  }
+
+  // --- Wallet Rename ---
+  async renameWallet(address: string, newName: string): Promise<boolean> {
+    const wallet = this.wallets.get(address);
+    if (!wallet) throw new Error('Wallet not found');
+    // Add a 'name' property if not present
+    (wallet as any).name = newName;
+    this.wallets.set(address, wallet);
+    return true;
   }
 
   private startUpdateCycle(): void {

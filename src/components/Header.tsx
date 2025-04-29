@@ -51,29 +51,21 @@ const Header = ({ onTrackWallet }: HeaderProps) => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-background border-b border-border">
-      <div className="flex h-full items-center justify-between pl-16 pr-0">
-        <div className="flex items-center px-4">
-          <div className="flex items-center mr-6">
-            <div className="flex items-center justify-center rounded-md h-10 w-10 transition-transform duration-300 hover:scale-110">
-              <img src="/lovable-uploads/a9b122d3-f7ef-4017-8eba-b492ec301e79.png" alt="Logo" className="h-full animate-pulse" />
-            </div>
+    <header className="fixed top-0 left-0 w-full z-30 bg-background/80 backdrop-blur-md shadow-md flex items-center justify-between px-6 py-3 draggable-area" style={{ WebkitAppRegion: 'drag', appRegion: 'drag' }}>
+      <div className="flex items-center gap-4 w-full">
+        <img src="/lovable-uploads/a9b122d3-f7ef-4017-8eba-b492ec301e79.png" alt="Logo" className="w-9 h-9 rounded-full shadow-lg no-drag" style={{ WebkitAppRegion: 'no-drag', appRegion: 'no-drag' }} />
+        <div className={`relative w-80 transition-all duration-200 ease-in-out ${isSearchFocused ? 'scale-105' : ''}`}>
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className="h-4 w-4 text-muted-foreground" />
           </div>
-          
-          <div className={`relative w-80 transition-all duration-200 ease-in-out ${isSearchFocused ? 'scale-105' : ''}`}>
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <Search className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <Input
-              type="search"
-              placeholder="Search assets, wallets, transactions..."
-              className="pl-10 bg-secondary border-none transition-all duration-300 hover:shadow-md"
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-            />
-          </div>
+          <Input
+            type="search"
+            placeholder="Search assets, wallets, transactions..."
+            className="pl-10 bg-secondary border-none transition-all duration-300 hover:shadow-md"
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+          />
         </div>
-        
         <div className="flex items-center space-x-2">
           {wallets.length ? (
             <WalletDropdown
@@ -166,8 +158,10 @@ const Header = ({ onTrackWallet }: HeaderProps) => {
           >
             <User size={20} />
           </Button>
-          <WindowControls />
         </div>
+      </div>
+      <div className="window-controls no-drag">
+        <WindowControls />
       </div>
     </header>
   );

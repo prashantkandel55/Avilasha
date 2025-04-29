@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ThemeProvider } from "next-themes";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { AuthService } from '@/services/authService';
+import { setupServices } from '@/services/initialize-services';
 
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -96,6 +97,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
+  // Initialize services when app starts
+  useEffect(() => {
+    // Initialize all services including free crypto APIs
+    setupServices();
+  }, []);
+
   // Error handling for Electron messages
   useEffect(() => {
     // Check if Electron bridge is available and has the error handler

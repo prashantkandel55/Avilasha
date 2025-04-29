@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -116,167 +115,55 @@ const TrackWalletModal = ({ open, onClose }: TrackWalletModalProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg rounded-2xl shadow-2xl bg-gradient-to-br from-white via-blue-50 to-purple-50 border border-primary/10 p-6">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold mb-2">Track Wallet</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-primary drop-shadow-glow mb-2 flex items-center gap-2">
+            <Wallet className="w-6 h-6 text-primary" /> Track a Wallet
+          </DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-6 py-2">
-          <div>
-            <Label htmlFor="wallet-address">Wallet Address</Label>
-            <div className="relative mt-1.5">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
-                #
-              </div>
-              <Input
-                id="wallet-address"
-                value={walletAddress}
-                onChange={(e) => setWalletAddress(e.target.value)}
-                placeholder="0x..."
-                className="pl-8"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="nickname">Nickname (Optional)</Label>
-            <Input
-              id="nickname"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="e.g., Whale Wallet #1"
-              className="mt-1.5"
-            />
-          </div>
-          
-          <div>
-            <Label>Select Chains</Label>
-            <div className="flex flex-wrap gap-2 mt-1.5">
-              {chains.map((chain) => (
-                <button
-                  key={chain.id}
-                  type="button"
-                  onClick={() => handleToggleChain(chain.id)}
-                  className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm ${
-                    selectedChains.includes(chain.id)
-                      ? `${chain.color} text-white`
-                      : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  <span className={`h-2 w-2 rounded-full mr-1.5 ${
-                    selectedChains.includes(chain.id) ? 'bg-white' : chain.color
-                  }`}></span>
-                  {chain.name}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div>
-            <Label>Tags</Label>
-            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => handleToggleTag(tag.id)}
-                  className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm ${
-                    selectedTags.includes(tag.id)
-                      ? `${tag.color} text-white`
-                      : 'bg-secondary text-muted-foreground'
-                  }`}
-                >
-                  <span className={`h-2 w-2 rounded-full mr-1.5 ${
-                    selectedTags.includes(tag.id) ? 'bg-white' : tag.color
-                  }`}></span>
-                  {tag.name}
-                </button>
-              ))}
-              
-              {showAddTag ? (
-                <div className="flex items-center gap-1">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="New tag name"
-                    className="h-8 text-sm"
-                    onKeyDown={(e) => e.key === 'Enter' && addNewTag()}
-                  />
-                  <Button size="sm" variant="ghost" onClick={() => setShowAddTag(false)}>
-                    <X size={16} />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={addNewTag}>
-                    <Plus size={16} />
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2 rounded-full"
-                  onClick={() => setShowAddTag(true)}
-                >
-                  <Plus size={14} className="mr-1" />
-                  Add Tag
-                </Button>
-              )}
-            </div>
-          </div>
-          
-          <div>
-            <Label>Notification Preferences</Label>
-            <div className="space-y-3 mt-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bell size={18} className="text-primary" />
-                  <span>All Transactions</span>
-                </div>
-                <Switch
-                  checked={allTransactions}
-                  onCheckedChange={(checked) => {
-                    setAllTransactions(checked);
-                    if (checked) setLargeTransactions(false);
-                  }}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-yellow-500">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  <span>Large Transactions Only</span>
-                </div>
-                <Switch
-                  checked={largeTransactions}
-                  onCheckedChange={(checked) => {
-                    setLargeTransactions(checked);
-                    if (checked) setAllTransactions(false);
-                  }}
-                />
-              </div>
-            </div>
+        <div className="grid grid-cols-1 gap-3 mb-4">
+          <Label className="text-xs font-semibold">Wallet Address
+            <Input value={walletAddress} onChange={e => setWalletAddress(e.target.value)} placeholder="0x... or domain" className="mt-1 focus:ring-2 focus:ring-primary/30" />
+          </Label>
+          <Label className="text-xs font-semibold">Nickname (optional)
+            <Input value={nickname} onChange={e => setNickname(e.target.value)} placeholder="e.g. My Main ETH" className="mt-1 focus:ring-2 focus:ring-primary/30" />
+          </Label>
+        </div>
+        <div className="mb-4">
+          <div className="text-xs font-semibold mb-1">Chains</div>
+          <div className="flex flex-wrap gap-2">
+            {chains.map(chain => (
+              <button key={chain.id} type="button" onClick={() => handleToggleChain(chain.id)} className={`px-3 py-1 rounded-full border text-xs transition ${selectedChains.includes(chain.id) ? 'bg-primary text-white border-primary' : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-primary/10'}`}>{chain.name}</button>
+            ))}
           </div>
         </div>
-        
-        <DialogFooter className="flex justify-between sm:justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="bg-primary hover:bg-primary/90"
-            onClick={handleSubmit}
-          >
-            Start Tracking
-          </Button>
+        <div className="mb-4">
+          <div className="text-xs font-semibold mb-1">Tags</div>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {tags.map(tag => (
+              <Badge key={tag.id} className={`cursor-pointer px-2 py-1 rounded-full text-xs ${selectedTags.includes(tag.id) ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`} onClick={() => handleToggleTag(tag.id)}>{tag.name}</Badge>
+            ))}
+            {showAddTag ? (
+              <Input autoFocus value={newTag} onChange={e => setNewTag(e.target.value)} onBlur={addNewTag} onKeyDown={e => e.key === 'Enter' && addNewTag()} className="w-24 text-xs px-2 py-1" placeholder="New tag..." />
+            ) : (
+              <button type="button" className="text-xs underline text-primary" onClick={() => setShowAddTag(true)}>+ Add Tag</button>
+            )}
+          </div>
+        </div>
+        <div className="mb-4 grid grid-cols-1 gap-2">
+          <Label className="flex items-center gap-2 text-xs font-semibold">
+            <Switch checked={allTransactions} onCheckedChange={setAllTransactions} />
+            Notify for all transactions
+          </Label>
+          <Label className="flex items-center gap-2 text-xs font-semibold">
+            <Switch checked={largeTransactions} onCheckedChange={setLargeTransactions} />
+            Notify for large transactions
+          </Label>
+        </div>
+        <DialogFooter className="flex justify-end gap-2 mt-4">
+          <Button variant="ghost" onClick={onClose} className="transition hover:bg-primary/10">Cancel</Button>
+          <Button className="bg-primary text-white rounded transition hover:bg-primary/90">Track Wallet</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

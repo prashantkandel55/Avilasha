@@ -50,17 +50,21 @@ const generateTransactions = (count: number) => {
 const History = () => {
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [transactions] = useState(generateTransactions(20));
+  const [transactions, setTransactions] = useState(generateTransactions(20));
   const [showWalletModal, setShowWalletModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchWallets() {
+    let interval: NodeJS.Timeout;
+    async function fetchWalletsAndHistory() {
       const allWallets = await walletService.getAllWallets?.() || [];
       setWallets(allWallets);
       setLoading(false);
+      setTransactions(generateTransactions(20));
     }
-    fetchWallets();
+    fetchWalletsAndHistory();
+    interval = setInterval(fetchWalletsAndHistory, 15000); // poll every 15s
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

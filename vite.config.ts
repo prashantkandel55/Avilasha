@@ -33,13 +33,13 @@ export default defineConfig(({ mode, command }) => ({
   },
   base: './', // Required for Electron to load assets correctly
   server: {
-    port: 3003, // changed from 3002 to avoid port conflict
+    port: 3020, // changed from 3010 to avoid port conflict
     host: 'localhost',
     strictPort: true, // Help with Electron specific port requirements
     hmr: {
       protocol: 'ws',
       host: 'localhost',
-      port: 3003
+      port: 3020
     }
   },
   plugins: [

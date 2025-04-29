@@ -15,6 +15,15 @@ export interface WalletType {
   supportedChains: string[];
 }
 
+export interface Token {
+  symbol: string;
+  name: string;
+  balance: number;
+  decimals?: number;
+  priceUSD?: number;
+  valueUSD: number; // Add valueUSD property to match usages elsewhere
+}
+
 export interface WalletConnection {
   id: string;
   name: string;
@@ -28,6 +37,7 @@ export interface WalletConnection {
   isHidden?: boolean;
   notes?: string;
   tags?: string[];
+  tokens: Token[];
 }
 
 export interface WalletTransaction {
@@ -532,7 +542,8 @@ class WalletManager {
         address: mockAddress,
         chain,
         isHardware: true,
-        isReadOnly: false
+        isReadOnly: false,
+        tokens: [] // Provide empty array for required tokens property
       });
       
       toast({

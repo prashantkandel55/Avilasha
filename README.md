@@ -27,6 +27,12 @@ Avilasha-2 is an Electron desktop application for cryptocurrency portfolio manag
 - **Transaction History**: Complete record of your crypto transactions
 - **Secure Storage**: Enhanced security for sensitive financial data
 
+## 🚀 Real-Time Updates (2025)
+
+- **Live Data Everywhere**: All major pages (Dashboard, Portfolio Analytics, Assets, Wallets, DeFi, NFTs, History, Alerts, News, Transfer) now update automatically every 15 seconds. No manual refresh needed—balances, transactions, market data, and analytics are always current.
+- **How it Works**: Each page uses polling to fetch the latest data from APIs and services. For advanced users, polling intervals can be customized in the code.
+- **Instant Feedback**: Actions like transfers, wallet changes, and alerts are reflected in the UI in real time.
+
 ## 🔄 Workflow
 
 ![Workflow Diagram](docs/images/workflow-diagram.png)

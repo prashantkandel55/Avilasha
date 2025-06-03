@@ -798,6 +798,7 @@ export const moralisService = new MoralisService();
 import { moralisNftApi } from './moralis-nft-api';
 import { cryptocompareApi } from './cryptocompare-api';
 import { cryptoNewsApi } from './cryptonews-api';
+import { defiLlamaApi } from './defillama-api';
 
 // Export a unified service for easier access
 export const freeCryptoApis = {

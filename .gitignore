@@ -31,3 +31,4 @@ release/
 
 # Build outputs
 build/
+.env

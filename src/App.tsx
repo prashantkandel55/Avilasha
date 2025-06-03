@@ -8,7 +8,6 @@ import MainLayout from "./layouts/MainLayout";
 import { toast } from "sonner";
 import { ThemeProvider } from "next-themes";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { AuthService } from '@/services/authService';
 import { setupServices } from '@/services/initialize-services';
 
 // Lazy load pages for better performance
@@ -25,7 +24,6 @@ const News = lazy(() => import("./pages/News"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const Auth = lazy(() => import("./pages/Auth"));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 // Create query client with defaults
@@ -59,42 +57,6 @@ const PageLoader = () => (
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
   </div>
 );
-
-// Protected Route Component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check initial authentication state with Supabase
-    AuthService.getCurrentUser().then(user => {
-      setIsAuthenticated(!!user);
-      setIsLoading(false);
-    });
-
-    // Listen for Supabase auth state changes
-    const { data: listener } = AuthService.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session?.user);
-      setIsLoading(false);
-    });
-
-    return () => {
-      if (listener && typeof listener.subscription?.unsubscribe === 'function') {
-        listener.subscription.unsubscribe();
-      }
-    };
-  }, []);
-
-  if (isLoading) {
-    return <PageLoader />;
-  }
-
-  return isAuthenticated ? (
-    <>{children}</>
-  ) : (
-    <Navigate to="/auth" replace />
-  );
-};
 
 const App = () => {
   // Initialize services when app starts
@@ -140,9 +102,7 @@ const App = () => {
             <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+                  <Route path="/" element={<MainLayout />}>
                     <Route index element={<Dashboard />} />
                     <Route path="portfolio" element={<PortfolioAnalytics />} />
                     <Route path="market" element={<MarketAnalysis />} />
@@ -155,6 +115,7 @@ const App = () => {
                     <Route path="news" element={<News />} />
                     <Route path="help" element={<HelpCenter />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="onboarding" element={<Onboarding />} />
                     <Route path="not-found" element={<NotFound />} />
                     <Route path="*" element={<Navigate to="/not-found" replace />} />
                   </Route>

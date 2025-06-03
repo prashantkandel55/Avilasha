@@ -117,7 +117,7 @@ const App = () => {
                     <Route path="settings" element={<Settings />} />
                     <Route path="onboarding" element={<Onboarding />} />
                     <Route path="not-found" element={<NotFound />} />
-                    <Route path="*" element={<Navigate to="/not-found" replace />} />
+                    <Route path="*" element={<Navigate to="/not-found\" replace />} />
                   </Route>
                 </Routes>
               </Suspense>

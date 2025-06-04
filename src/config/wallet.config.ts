@@ -11,6 +11,15 @@ export const WALLET_CONFIG = {
     'solana',
     'sui'
   ],
+  // Add RPC URLs for supported networks
+  rpcUrls: {
+    'ethereum': 'https://eth.public-rpc.com',
+    'binance-smart-chain': 'https://bsc-dataseed1.binance.org',
+    'polygon': 'https://polygon-rpc.com',
+    'avalanche': 'https://api.avax.network/ext/bc/C/rpc',
+    'solana': 'https://api.mainnet-beta.solana.com',
+    'sui': 'https://fullnode.mainnet.sui.io:443'
+  },
   refreshInterval: 30000, // 30 seconds
   priceUpdateInterval: 60000, // 1 minute
   maxWallets: 10,

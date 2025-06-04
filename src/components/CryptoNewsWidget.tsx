@@ -44,15 +44,76 @@ const CryptoNewsWidget: React.FC<CryptoNewsWidgetProps> = ({
   const fetchNews = async () => {
     setLoading(true);
     try {
-      let newsData: NewsItem[];
+      // Mock news data for demo purposes
+      const mockNews: NewsItem[] = [
+        {
+          id: '1',
+          title: 'Bitcoin Surges Past $60,000 as Institutional Interest Grows',
+          description: 'Bitcoin has surpassed $60,000 for the first time in weeks as institutional investors continue to show interest in the cryptocurrency.',
+          url: 'https://example.com/news/1',
+          source: 'Crypto News',
+          image: 'https://via.placeholder.com/800x450?text=Bitcoin+News',
+          date: '2025-04-15',
+          topics: ['Bitcoin', 'Markets'],
+          sentiment: 'Positive',
+          type: 'news',
+          tickers: ['BTC']
+        },
+        {
+          id: '2',
+          title: 'Ethereum Upgrade Scheduled for Next Month',
+          description: 'Developers have announced that the next major Ethereum upgrade will take place next month, bringing significant improvements to the network.',
+          url: 'https://example.com/news/2',
+          source: 'Blockchain Daily',
+          image: 'https://via.placeholder.com/800x450?text=Ethereum+News',
+          date: '2025-04-14',
+          topics: ['Ethereum', 'Technology'],
+          sentiment: 'Positive',
+          type: 'news',
+          tickers: ['ETH']
+        },
+        {
+          id: '3',
+          title: 'Regulatory Concerns Impact Crypto Markets',
+          description: 'New regulatory proposals have caused uncertainty in cryptocurrency markets, with some assets seeing significant price drops.',
+          url: 'https://example.com/news/3',
+          source: 'Financial Times',
+          image: 'https://via.placeholder.com/800x450?text=Regulation+News',
+          date: '2025-04-13',
+          topics: ['Regulation', 'Markets'],
+          sentiment: 'Negative',
+          type: 'news',
+          tickers: ['BTC', 'ETH', 'XRP']
+        },
+        {
+          id: '4',
+          title: 'New DeFi Protocol Launches with $100M TVL',
+          description: 'A new decentralized finance protocol has launched with $100 million in total value locked, attracting attention from yield farmers.',
+          url: 'https://example.com/news/4',
+          source: 'DeFi Pulse',
+          image: 'https://via.placeholder.com/800x450?text=DeFi+News',
+          date: '2025-04-12',
+          topics: ['DeFi', 'Launch'],
+          sentiment: 'Positive',
+          type: 'news',
+          tickers: ['AAVE', 'UNI', 'COMP']
+        },
+        {
+          id: '5',
+          title: 'NFT Market Shows Signs of Recovery',
+          description: 'After months of declining sales, the NFT market is showing signs of recovery with several high-profile collections seeing increased trading volume.',
+          url: 'https://example.com/news/5',
+          source: 'NFT Insider',
+          image: 'https://via.placeholder.com/800x450?text=NFT+News',
+          date: '2025-04-11',
+          topics: ['NFTs', 'Markets'],
+          sentiment: 'Neutral',
+          type: 'news',
+          tickers: ['ETH', 'SOL']
+        }
+      ];
       
-      if (filteredCoins.length > 0) {
-        newsData = await cryptoService.getNewsByCoin(filteredCoins, limit);
-      } else {
-        newsData = await cryptoService.getLatestNews(1, limit);
-      }
-      
-      setNews(newsData);
+      setNews(mockNews);
     } catch (error) {
       console.error('Error fetching news:', error);
       setNews([]);
@@ -69,8 +130,12 @@ const CryptoNewsWidget: React.FC<CryptoNewsWidgetProps> = ({
     
     setLoading(true);
     try {
-      const results = await cryptoService.searchNews(searchTerm, limit);
-      setNews(results);
+      // Filter mock news based on search term
+      const filteredNews = news.filter(item => 
+        item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setNews(filteredNews);
     } catch (error) {
       console.error('Error searching news:', error);
     } finally {

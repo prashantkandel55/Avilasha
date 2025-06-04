@@ -15,7 +15,7 @@ interface Asset {
 }
 
 interface TopAssetsProps {
-  wallet: WalletConnection;
+  wallet: WalletConnection | null;
 }
 
 /**
@@ -26,7 +26,7 @@ interface TopAssetsProps {
  */
 const TopAssets: React.FC<TopAssetsProps> = ({ wallet }) => {
   // Use wallet.tokens if available
-  const tokens = (wallet as any).tokens || [];
+  const tokens = wallet ? (wallet as any).tokens || [] : [];
   // Sort by valueUSD descending
   const topTokens = tokens.sort((a: any, b: any) => (b.valueUSD || 0) - (a.valueUSD || 0)).slice(0, 5);
 

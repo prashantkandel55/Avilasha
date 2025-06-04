@@ -10,7 +10,7 @@ interface PortfolioChartProps {
   /**
    * The wallet connection object.
    */
-  wallet: WalletConnection;
+  wallet: WalletConnection | null;
 }
 
 /**

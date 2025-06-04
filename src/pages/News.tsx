@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription 
 } from '@/components/ui/card';
@@ -26,6 +26,30 @@ const News = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
+  const fetchNews = useCallback(async (page: number = 1) => {
+    try {
+      setError(null);
+      const latestNews = await newsApiService.getLatestNews(page);
+      setNews(prev => page === 1 ? latestNews : [...prev, ...latestNews]);
+    } catch (err) {
+      setError('Failed to load news. Please try again later.');
+      toast({
+        title: 'Error',
+        description: 'Failed to load news data',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
+  const fetchTopHeadlines = useCallback(async () => {
+    try {
+      const headlines = await newsApiService.getTopHeadlines();
+      setTopHeadlines(headlines);
+    } catch (err) {
+      console.error('Failed to load headlines:', err);
+    }
+  }, []);
+
   useEffect(() => {
     async function fetchWallets() {
       const allWallets = await walletService.getAllWallets?.() || [];
@@ -36,45 +60,28 @@ const News = () => {
   }, []);
 
   useEffect(() => {
-    fetchNews();
+    fetchNews(1);
     fetchTopHeadlines();
-  }, []);
+  }, [fetchNews, fetchTopHeadlines]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    async function fetchNews() {
-      try {
-        setError(null);
-        const latestNews = await newsApiService.getLatestNews(1);
-        setNews(latestNews);
-      } catch (err) {
-        setError('Failed to load news. Please try again later.');
-        toast({
-          title: 'Error',
-          description: 'Failed to load news data',
-          variant: 'destructive',
-        });
-      }
-    }
-    fetchNews();
-    interval = setInterval(fetchNews, 15000); // poll every 15s
+    
+    // Start polling
+    interval = setInterval(() => {
+      fetchNews(1); // Always fetch first page for updates
+    }, 15000); // poll every 15s
+    
+    // Cleanup on unmount
     return () => clearInterval(interval);
-  }, []);
-
-  const fetchTopHeadlines = async () => {
-    try {
-      const headlines = await newsApiService.getTopHeadlines();
-      setTopHeadlines(headlines);
-    } catch (err) {
-      console.error('Failed to load headlines:', err);
-    }
-  };
+  }, [fetchNews]);
   
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
     
     try {
       setSearchLoading(true);
+      setCurrentPage(1); // Reset to first page on new search
       const results = await newsApiService.searchNews(searchTerm);
       setNews(results);
     } catch (err) {
@@ -146,7 +153,9 @@ const News = () => {
   });
 
   const loadMore = () => {
-    fetchNews(currentPage + 1);
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchNews(nextPage);
   };
 
   if (loading) {
@@ -212,7 +221,7 @@ const News = () => {
               <Button 
                 variant="outline" 
                 className="mt-2" 
-                onClick={() => fetchNews()}
+                onClick={() => fetchNews(1)}
               >
                 Try Again
               </Button>

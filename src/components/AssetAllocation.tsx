@@ -15,7 +15,7 @@ interface Asset {
 }
 
 interface AssetAllocationProps {
-  wallet: { tokens: Token[] };
+  wallet: { tokens: Token[] } | null;
 }
 
 /**
@@ -25,6 +25,11 @@ interface AssetAllocationProps {
  * - Type safe
  */
 const AssetAllocation: React.FC<AssetAllocationProps> = ({ wallet }) => {
+  // Early return if wallet is null
+  if (!wallet) {
+    return <div className="bg-card rounded-xl p-4 shadow-sm">No wallet selected.</div>;
+  }
+
   // Example: derive asset allocation from wallet (if wallet has tokens)
   const tokens = wallet.tokens || [];
   const totalValue = tokens.reduce((sum, t) => sum + t.valueUSD, 0);
@@ -37,9 +42,6 @@ const AssetAllocation: React.FC<AssetAllocationProps> = ({ wallet }) => {
       }))
     : [];
 
-  if (!wallet) {
-    return <div className="bg-card rounded-xl p-4 shadow-sm">No wallet selected.</div>;
-  }
   if (!allocation.length) {
     return <div className="bg-card rounded-xl p-4 shadow-sm">No asset data available for this wallet.</div>;
   }

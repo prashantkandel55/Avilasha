@@ -11,6 +11,7 @@ import { Newspaper, Search, Bookmark, Share2, Calendar, TrendingUp, Clock, BarCh
 import { toast } from '@/hooks/use-toast';
 import { newsApiService, NewsItem } from '@/services/news-api';
 import { Skeleton } from "@/components/ui/skeleton";
+import LiveCryptoPrices from '@/components/LiveCryptoPrices';
 
 const News = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -52,26 +53,33 @@ const News = () => {
   useEffect(() => {
     fetchNews(1);
     fetchTopHeadlines();
+    
+    // Subscribe to real-time news updates
+    const unsubscribe = newsApiService.subscribe(() => {
+      fetchNews(1);
+      fetchTopHeadlines();
+    });
+    
+    return () => {
+      unsubscribe();
+    };
   }, [fetchNews, fetchTopHeadlines]);
 
+  // Set up polling for real-time updates
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    const interval = setInterval(() => {
+      fetchNews(1);
+      fetchTopHeadlines();
+    }, 60000); // Update every minute
     
-    // Start polling
-    interval = setInterval(() => {
-      fetchNews(1); // Always fetch first page for updates
-    }, 15000); // poll every 15s
-    
-    // Cleanup on unmount
     return () => clearInterval(interval);
-  }, [fetchNews]);
+  }, [fetchNews, fetchTopHeadlines]);
   
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
     
     try {
       setSearchLoading(true);
-      setCurrentPage(1); // Reset to first page on new search
       const results = await newsApiService.searchNews(searchTerm);
       setNews(results);
       setSearchLoading(false);
@@ -142,9 +150,12 @@ const News = () => {
     <div className="container mx-auto pt-6 pb-12">
       <div className="flex flex-col space-y-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Crypto News</h1>
+          <h1 className="text-3xl font-bold mb-1 cyberpunk-text">Crypto News</h1>
           <p className="text-muted-foreground">Stay updated with the latest cryptocurrency news and insights</p>
         </div>
+        
+        {/* Live Crypto Prices */}
+        <LiveCryptoPrices />
         
         <div className="flex items-center gap-4">
           <div className="relative flex-grow">
@@ -161,6 +172,7 @@ const News = () => {
           <Button 
             onClick={handleSearch} 
             disabled={searchLoading || !searchTerm.trim()}
+            className="bg-primary hover:bg-primary/90 transition-colors"
           >
             {searchLoading ? 'Searching...' : 'Search'}
           </Button>
@@ -193,7 +205,7 @@ const News = () => {
           <TabsContent value="all">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                {news.length === 0 ? (
+                {loading && news.length === 0 ? (
                   <Card>
                     <CardContent className="pt-6">
                       <div className="space-y-2">
@@ -207,7 +219,7 @@ const News = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ) : (
+                ) : news.length > 0 ? (
                   <Card>
                     <CardContent className="p-6">
                       <div className="relative mb-6">
@@ -216,6 +228,9 @@ const News = () => {
                             src={news[0].image} 
                             alt={news[0].title} 
                             className="rounded-lg object-cover w-full h-full"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80';
+                            }}
                           />
                         </AspectRatio>
                         
@@ -276,10 +291,18 @@ const News = () => {
                       </div>
                     </CardContent>
                   </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <Newspaper className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg font-medium mb-2">No news articles found</h3>
+                      <p className="text-muted-foreground mb-4">Try adjusting your search or check back later for updates.</p>
+                    </CardContent>
+                  </Card>
                 )}
               
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                  {news.length === 0 ? (
+                  {loading && news.length === 0 ? (
                     Array(6).fill(0).map((_, i) => (
                       <Card key={i}>
                         <CardContent className="pt-6">
@@ -294,7 +317,7 @@ const News = () => {
                     ))
                   ) : (
                     news.slice(1, 7).map((item) => (
-                      <Card key={item.id}>
+                      <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
                           <div className="mb-3 relative">
                             <AspectRatio ratio={16 / 9}>
@@ -302,9 +325,12 @@ const News = () => {
                                 src={item.image} 
                                 alt={item.title} 
                                 className="rounded object-cover w-full h-full"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80';
+                                }}
                               />
                             </AspectRatio>
-                            <Badge className="absolute top-2 left-2">
+                            <Badge className="absolute top-2 left-2 bg-primary/90">
                               {item.category}
                             </Badge>
                           </div>
@@ -315,7 +341,7 @@ const News = () => {
                             <span>{item.timeToRead}</span>
                           </div>
                           
-                          <h4 className="font-medium leading-tight mb-1 line-clamp-2">
+                          <h4 className="font-medium leading-tight mb-1 line-clamp-2 hover:text-primary transition-colors">
                             {item.title}
                           </h4>
                           
@@ -353,6 +379,26 @@ const News = () => {
                     ))
                   )}
                 </div>
+                
+                {news.length > 0 && (
+                  <div className="flex justify-center mt-6">
+                    <Button 
+                      onClick={loadMore} 
+                      variant="outline" 
+                      className="min-w-[200px]"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        'Load More News'
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-6">
@@ -363,7 +409,7 @@ const News = () => {
                   </CardHeader>
                   
                   <CardContent className="px-3">
-                    {news.length === 0 ? (
+                    {loading && news.length === 0 ? (
                       <div className="space-y-4">
                         {Array(5).fill(0).map((_, i) => (
                           <div key={i} className="flex gap-2">
@@ -385,6 +431,9 @@ const News = () => {
                                 src={item.image} 
                                 alt={item.title} 
                                 className="h-12 w-12 rounded object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80';
+                                }}
                               />
                             </div>
                             
@@ -439,6 +488,9 @@ const News = () => {
                               src={item.image} 
                               alt={item.title} 
                               className="h-12 w-12 rounded object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80';
+                              }}
                             />
                           </div>
                           
@@ -520,6 +572,7 @@ const News = () => {
                                     ? 'destructive' 
                                     : 'secondary'
                                 }
+                                className={sentiment === 'Bullish' ? 'bg-green-500' : sentiment === 'Bearish' ? 'bg-red-500' : ''}
                               >
                                 {sentiment}
                               </Badge>
@@ -543,6 +596,7 @@ const News = () => {
                         <Input 
                           placeholder="Enter keyword..."
                           id="alert-input"
+                          className="border-primary/30 focus:border-primary"
                         />
                         <Button 
                           size="sm"
@@ -553,6 +607,7 @@ const News = () => {
                               input.value = '';
                             }
                           }}
+                          className="bg-primary hover:bg-primary/90"
                         >
                           <BellPlus className="h-4 w-4 mr-1" />
                           Add
@@ -616,7 +671,7 @@ const News = () => {
       </div>
       
       {selectedNews && (
-        <div className="fixed inset-0 bg-background/80 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-lg shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-card p-4 border-b">
               <div className="flex items-center justify-between">
@@ -636,6 +691,9 @@ const News = () => {
                 src={selectedNews.image} 
                 alt={selectedNews.title} 
                 className="rounded-lg w-full h-auto mb-4"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80';
+                }}
               />
               
               <div className="flex items-center gap-3 text-sm mb-4">

@@ -1,1235 +1,1060 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { SplashCursor } from '@/components/ui/splash-cursor';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Pickaxe, 
   Cpu, 
   Zap, 
   Bolt, 
+  TrendingUp, 
   BarChart, 
   Clock, 
-  Coins, 
   Trophy, 
-  Users, 
-  ArrowUp, 
-  ArrowDown, 
-  Flame,
+  ChevronUp, 
+  Coins, 
+  Layers, 
+  Cog, 
+  HardDrive, 
+  Gauge,
   Sparkles,
-  Gem,
-  Gift,
+  Wrench,
+  Flame,
+  Fan,
+  Chip,
+  Thermometer,
+  Droplets,
+  Lightbulb,
   Rocket,
-  Layers,
-  Wallet,
-  Landmark,
-  Lightbulb
+  Gem
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useNotification } from '@/context/NotificationContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-// Mining difficulty levels
-const DIFFICULTY_LEVELS = {
-  easy: { hashRate: 10, powerUsage: 5, reward: 0.5 },
-  medium: { hashRate: 25, powerUsage: 15, reward: 1.5 },
-  hard: { hashRate: 50, powerUsage: 35, reward: 3.5 },
-  extreme: { hashRate: 100, powerUsage: 75, reward: 8 }
-};
+// Mining hardware types
+interface MiningHardware {
+  id: string;
+  name: string;
+  type: 'CPU' | 'GPU' | 'ASIC';
+  hashrate: number;
+  power: number;
+  price: number;
+  efficiency: number;
+  level: number;
+  maxLevel: number;
+  icon: React.ReactNode;
+}
 
-// Mining pools
-const MINING_POOLS = [
-  { id: 'solo', name: 'Solo Mining', fee: 0, minPayout: 0.001, reliability: 'Variable' },
-  { id: 'avilashaPool', name: 'Avilasha Pool', fee: 1, minPayout: 0.01, reliability: 'High' },
-  { id: 'megaPool', name: 'MegaPool', fee: 2, minPayout: 0.005, reliability: 'Very High' },
-  { id: 'cryptoUnion', name: 'Crypto Union', fee: 1.5, minPayout: 0.02, reliability: 'Medium' }
-];
+// Mining stats
+interface MiningStats {
+  totalMined: number;
+  hashrate: number;
+  efficiency: number;
+  power: number;
+  uptime: number;
+  lastPayout: number;
+  startTime: number;
+}
 
-// Hardware options
-const HARDWARE_OPTIONS = [
-  { id: 'cpu', name: 'CPU Mining', hashRate: 5, powerUsage: 10, initialCost: 0 },
-  { id: 'gpu', name: 'GPU Mining', hashRate: 25, powerUsage: 30, initialCost: 500 },
-  { id: 'asic', name: 'ASIC Miner', hashRate: 100, powerUsage: 80, initialCost: 2000 }
-];
+// Upgrade
+interface Upgrade {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  effect: {
+    type: 'hashrate' | 'efficiency' | 'power' | 'luck';
+    value: number;
+  };
+  applied: boolean;
+  icon: React.ReactNode;
+}
 
-const Mining = () => {
-  // State for mining
-  const [isMining, setIsMining] = useState(false);
-  const [miningProgress, setMiningProgress] = useState(0);
-  const [miningSpeed, setMiningSpeed] = useState(1);
-  const [miningPower, setMiningPower] = useState(50);
-  const [difficulty, setDifficulty] = useState('medium');
-  const [miningPool, setMiningPool] = useState('avilashaPool');
-  const [hardware, setHardware] = useState('cpu');
-  const [autoReinvest, setAutoReinvest] = useState(false);
-  const [showEffects, setShowEffects] = useState(true);
-  
+// Achievement
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  requirement: number;
+  type: 'mined' | 'hashrate' | 'efficiency' | 'upgrades';
+  unlocked: boolean;
+  reward: number;
+  icon: React.ReactNode;
+}
+
+const Mining: React.FC = () => {
+  // Mining hardware options
+  const [hardware, setHardware] = useState<MiningHardware[]>([
+    {
+      id: 'cpu-basic',
+      name: 'Basic CPU Miner',
+      type: 'CPU',
+      hashrate: 0.5,
+      power: 65,
+      price: 0,
+      efficiency: 0.0077,
+      level: 1,
+      maxLevel: 5,
+      icon: <Cpu />
+    },
+    {
+      id: 'gpu-basic',
+      name: 'Basic GPU Rig',
+      type: 'GPU',
+      hashrate: 30,
+      power: 150,
+      price: 500,
+      efficiency: 0.2,
+      level: 0,
+      maxLevel: 10,
+      icon: <HardDrive />
+    },
+    {
+      id: 'asic-basic',
+      name: 'Entry ASIC Miner',
+      type: 'ASIC',
+      hashrate: 100,
+      power: 1500,
+      price: 2000,
+      efficiency: 0.067,
+      level: 0,
+      maxLevel: 15,
+      icon: <Chip />
+    }
+  ]);
+
   // Mining stats
-  const [totalMined, setTotalMined] = useState(0);
-  const [miningRate, setMiningRate] = useState(0);
-  const [powerUsage, setPowerUsage] = useState(0);
-  const [sessionRewards, setSessionRewards] = useState(0);
-  const [miningHistory, setMiningHistory] = useState<{timestamp: number, amount: number}[]>([]);
-  const [lastReward, setLastReward] = useState(0);
-  const [miningLevel, setMiningLevel] = useState(1);
-  const [experience, setExperience] = useState(0);
-  const [nextLevelExp, setNextLevelExp] = useState(100);
-  
-  // Hardware stats
-  const [ownedHardware, setOwnedHardware] = useState<{[key: string]: number}>({
-    cpu: 1,
-    gpu: 0,
-    asic: 0
+  const [stats, setStats] = useState<MiningStats>({
+    totalMined: 0,
+    hashrate: 0.5, // Start with basic CPU
+    efficiency: 0.0077,
+    power: 65,
+    uptime: 0,
+    lastPayout: 0,
+    startTime: Date.now()
   });
-  
-  // Economy
-  const [balance, setBalance] = useState(100); // Starting with 100 credits
-  const [electricityCost, setElectricityCost] = useState(0.12); // $ per kWh
-  
+
+  // Mining state
+  const [isMining, setIsMining] = useState(false);
+  const [balance, setBalance] = useState(100); // Start with 100 AVI tokens
+  const [miningProgress, setMiningProgress] = useState(0);
+  const [miningInterval, setMiningInterval] = useState<NodeJS.Timeout | null>(null);
+  const [activeHardware, setActiveHardware] = useState<string>('cpu-basic');
+  const [showConfetti, setShowConfetti] = useState(false);
+
   // Upgrades
-  const [upgrades, setUpgrades] = useState<{[key: string]: number}>({
-    cooling: 0,
-    efficiency: 0,
-    overclocking: 0,
-    luck: 0
-  });
-  
+  const [upgrades, setUpgrades] = useState<Upgrade[]>([
+    {
+      id: 'cooling',
+      name: 'Advanced Cooling',
+      description: 'Reduce power consumption by 10%',
+      cost: 200,
+      effect: { type: 'power', value: -0.1 },
+      applied: false,
+      icon: <Droplets />
+    },
+    {
+      id: 'overclock',
+      name: 'Overclocking',
+      description: 'Increase hashrate by 15%',
+      cost: 350,
+      effect: { type: 'hashrate', value: 0.15 },
+      applied: false,
+      icon: <Gauge />
+    },
+    {
+      id: 'efficiency',
+      name: 'Power Optimization',
+      description: 'Improve efficiency by 20%',
+      cost: 500,
+      effect: { type: 'efficiency', value: 0.2 },
+      applied: false,
+      icon: <Lightbulb />
+    },
+    {
+      id: 'luck',
+      name: 'Lucky Algorithm',
+      description: 'Increase mining rewards by 25%',
+      cost: 750,
+      effect: { type: 'luck', value: 0.25 },
+      applied: false,
+      icon: <Sparkles />
+    },
+    {
+      id: 'thermal',
+      name: 'Thermal Compound',
+      description: 'Reduce power consumption by 5%',
+      cost: 150,
+      effect: { type: 'power', value: -0.05 },
+      applied: false,
+      icon: <Thermometer />
+    },
+    {
+      id: 'fans',
+      name: 'High-RPM Fans',
+      description: 'Increase hashrate by 8%',
+      cost: 250,
+      effect: { type: 'hashrate', value: 0.08 },
+      applied: false,
+      icon: <Fan />
+    }
+  ]);
+
   // Achievements
-  const [achievements, setAchievements] = useState<{[key: string]: boolean}>({
-    firstMine: false,
-    reach10: false,
-    reach100: false,
-    reach1000: false,
-    level5: false,
-    level10: false,
-    allHardware: false
-  });
-  
-  // References
-  const miningInterval = useRef<NodeJS.Timeout | null>(null);
-  const { addNotification } = useNotification();
-  
-  // Calculate effective mining rate based on all factors
-  const calculateMiningRate = useCallback(() => {
-    const selectedHardware = HARDWARE_OPTIONS.find(h => h.id === hardware);
-    const difficultySettings = DIFFICULTY_LEVELS[difficulty as keyof typeof DIFFICULTY_LEVELS];
-    
-    if (!selectedHardware || !difficultySettings) return 0;
-    
-    // Base rate from hardware
-    let rate = selectedHardware.hashRate * (ownedHardware[hardware] || 1);
-    
-    // Apply difficulty modifier
-    rate = rate * (difficultySettings.hashRate / 50);
-    
-    // Apply mining power (slider)
-    rate = rate * (miningPower / 100);
-    
-    // Apply mining speed
-    rate = rate * miningSpeed;
-    
-    // Apply upgrades
-    rate = rate * (1 + (upgrades.efficiency * 0.1));
-    rate = rate * (1 + (upgrades.overclocking * 0.15));
-    
-    // Apply mining level bonus (2% per level)
-    rate = rate * (1 + ((miningLevel - 1) * 0.02));
-    
-    return parseFloat(rate.toFixed(2));
-  }, [difficulty, hardware, miningPower, miningSpeed, ownedHardware, upgrades, miningLevel]);
-  
-  // Calculate power usage
-  const calculatePowerUsage = useCallback(() => {
-    const selectedHardware = HARDWARE_OPTIONS.find(h => h.id === hardware);
-    if (!selectedHardware) return 0;
-    
-    // Base power from hardware
-    let power = selectedHardware.powerUsage * (ownedHardware[hardware] || 1);
-    
-    // Apply mining power (slider)
-    power = power * (miningPower / 100);
-    
-    // Apply overclocking (increases power usage)
-    power = power * (1 + (upgrades.overclocking * 0.2));
-    
-    // Apply cooling (reduces power usage)
-    power = power * (1 - (upgrades.cooling * 0.08));
-    
-    return parseFloat(power.toFixed(2));
-  }, [hardware, miningPower, upgrades, ownedHardware]);
-  
-  // Calculate hourly profit
-  const calculateHourlyProfit = useCallback(() => {
-    const rate = calculateMiningRate();
-    const power = calculatePowerUsage();
-    const difficultySettings = DIFFICULTY_LEVELS[difficulty as keyof typeof DIFFICULTY_LEVELS];
-    const pool = MINING_POOLS.find(p => p.id === miningPool);
-    
-    if (!difficultySettings || !pool) return 0;
-    
-    // Calculate hourly mining reward
-    const hourlyReward = rate * difficultySettings.reward;
-    
-    // Apply pool fee
-    const afterFee = hourlyReward * (1 - (pool.fee / 100));
-    
-    // Calculate electricity cost
-    const hourlyCost = (power / 1000) * electricityCost;
-    
-    // Apply luck bonus
-    const withLuck = afterFee * (1 + (upgrades.luck * 0.05));
-    
-    return parseFloat((withLuck - hourlyCost).toFixed(2));
-  }, [calculateMiningRate, calculatePowerUsage, difficulty, electricityCost, miningPool, upgrades]);
-  
-  // Initialize and update mining rate
-  useEffect(() => {
-    const newRate = calculateMiningRate();
-    setMiningRate(newRate);
-    
-    const newPower = calculatePowerUsage();
-    setPowerUsage(newPower);
-  }, [calculateMiningRate, calculatePowerUsage]);
-  
-  // Start/stop mining
-  const toggleMining = () => {
-    if (isMining) {
-      // Stop mining
-      if (miningInterval.current) {
-        clearInterval(miningInterval.current);
-        miningInterval.current = null;
-      }
-      setIsMining(false);
-      toast({
-        title: "Mining Stopped",
-        description: `You mined ${sessionRewards.toFixed(4)} AVI tokens this session`,
-      });
-    } else {
-      // Start mining
-      setIsMining(true);
-      setSessionRewards(0);
-      
-      // Create mining interval
-      miningInterval.current = setInterval(() => {
-        // Update progress
-        setMiningProgress(prev => {
-          const increment = (miningRate / 100) * 2; // Adjust for visual speed
-          const newProgress = prev + increment;
-          
-          // If completed a block
-          if (newProgress >= 100) {
-            const reward = calculateReward();
-            setTotalMined(prev => prev + reward);
-            setBalance(prev => prev + reward);
-            setSessionRewards(prev => prev + reward);
-            setLastReward(reward);
-            
-            // Add to history
-            setMiningHistory(prev => [
-              { timestamp: Date.now(), amount: reward },
-              ...prev.slice(0, 19) // Keep last 20 entries
-            ]);
-            
-            // Add experience
-            const expGain = Math.ceil(reward * 10);
-            addExperience(expGain);
-            
-            // Show notification
-            addNotification({
-              id: `mining-${Date.now()}`,
-              type: 'transaction',
-              title: 'Mining Reward',
-              description: `You mined ${reward.toFixed(4)} AVI tokens`,
-              timestamp: Date.now(),
-              read: false
-            });
-            
-            // Show toast occasionally (not every time to avoid spam)
-            if (Math.random() < 0.3) {
-              toast({
-                title: "Block Mined!",
-                description: `You earned ${reward.toFixed(4)} AVI tokens`,
-              });
-            }
-            
-            // Show confetti effect for larger rewards
-            if (reward > 1 && showEffects) {
-              triggerConfetti();
-            }
-            
-            // Check for achievements
-            checkAchievements(reward);
-            
-            return 0; // Reset progress
-          }
-          
-          return newProgress;
-        });
-      }, 100); // Update every 100ms
+  const [achievements, setAchievements] = useState<Achievement[]>([
+    {
+      id: 'first-coin',
+      name: 'First Coin',
+      description: 'Mine your first AVI token',
+      requirement: 1,
+      type: 'mined',
+      unlocked: false,
+      reward: 10,
+      icon: <Coins />
+    },
+    {
+      id: 'hundred-coins',
+      name: 'Hundred Club',
+      description: 'Mine 100 AVI tokens',
+      requirement: 100,
+      type: 'mined',
+      unlocked: false,
+      reward: 50,
+      icon: <Layers />
+    },
+    {
+      id: 'hashrate-50',
+      name: 'Power Miner',
+      description: 'Reach 50 H/s hashrate',
+      requirement: 50,
+      type: 'hashrate',
+      unlocked: false,
+      reward: 100,
+      icon: <Bolt />
+    },
+    {
+      id: 'first-upgrade',
+      name: 'Upgrader',
+      description: 'Purchase your first upgrade',
+      requirement: 1,
+      type: 'upgrades',
+      unlocked: false,
+      reward: 25,
+      icon: <Cog />
+    },
+    {
+      id: 'efficiency-master',
+      name: 'Efficiency Master',
+      description: 'Reach 0.5 efficiency',
+      requirement: 0.5,
+      type: 'efficiency',
+      unlocked: false,
+      reward: 150,
+      icon: <Zap />
     }
-  };
-  
-  // Calculate mining reward
-  const calculateReward = () => {
-    const difficultySettings = DIFFICULTY_LEVELS[difficulty as keyof typeof DIFFICULTY_LEVELS];
-    const pool = MINING_POOLS.find(p => p.id === miningPool);
-    
-    if (!difficultySettings || !pool) return 0;
-    
-    // Base reward from difficulty
-    let reward = difficultySettings.reward;
-    
-    // Apply randomness (±20%)
-    const randomFactor = 0.8 + (Math.random() * 0.4);
-    reward = reward * randomFactor;
-    
-    // Apply pool fee
-    reward = reward * (1 - (pool.fee / 100));
-    
-    // Apply luck bonus
-    reward = reward * (1 + (upgrades.luck * 0.05));
-    
-    // Apply mining level bonus (2% per level)
-    reward = reward * (1 + ((miningLevel - 1) * 0.02));
-    
-    // Small chance for bonus reward (jackpot)
-    if (Math.random() < 0.05 * (1 + (upgrades.luck * 0.1))) {
-      reward = reward * (2 + Math.random() * 3); // 2-5x bonus
-      
-      toast({
-        title: "Jackpot!",
-        description: `You found a rare block worth ${reward.toFixed(4)} AVI tokens!`,
-      });
-      
-      if (showEffects) {
-        triggerConfetti();
-      }
-    }
-    
-    return parseFloat(reward.toFixed(4));
-  };
-  
-  // Add experience and handle level ups
-  const addExperience = (amount: number) => {
-    setExperience(prev => {
-      const newExp = prev + amount;
-      
-      // Check for level up
-      if (newExp >= nextLevelExp) {
-        const newLevel = miningLevel + 1;
-        setMiningLevel(newLevel);
-        
-        // Calculate next level requirement (increases each level)
-        const nextExp = Math.floor(100 * Math.pow(1.5, newLevel - 1));
-        setNextLevelExp(nextExp);
-        
-        // Show level up notification
-        toast({
-          title: "Level Up!",
-          description: `You reached mining level ${newLevel}!`,
-        });
-        
-        if (showEffects) {
-          triggerConfetti();
-        }
-        
-        return newExp - nextLevelExp; // Carry over excess XP
-      }
-      
-      return newExp;
-    });
-  };
-  
-  // Check for achievements
-  const checkAchievements = (reward: number) => {
-    const newAchievements = { ...achievements };
-    let achievementUnlocked = false;
-    
-    // First mining achievement
-    if (!achievements.firstMine) {
-      newAchievements.firstMine = true;
-      achievementUnlocked = true;
-    }
-    
-    // Total mined achievements
-    const newTotal = totalMined + reward;
-    if (newTotal >= 10 && !achievements.reach10) {
-      newAchievements.reach10 = true;
-      achievementUnlocked = true;
-    }
-    if (newTotal >= 100 && !achievements.reach100) {
-      newAchievements.reach100 = true;
-      achievementUnlocked = true;
-    }
-    if (newTotal >= 1000 && !achievements.reach1000) {
-      newAchievements.reach1000 = true;
-      achievementUnlocked = true;
-    }
-    
-    // Level achievements
-    if (miningLevel >= 5 && !achievements.level5) {
-      newAchievements.level5 = true;
-      achievementUnlocked = true;
-    }
-    if (miningLevel >= 10 && !achievements.level10) {
-      newAchievements.level10 = true;
-      achievementUnlocked = true;
-    }
-    
-    // Hardware achievement
-    if (ownedHardware.cpu > 0 && ownedHardware.gpu > 0 && ownedHardware.asic > 0 && !achievements.allHardware) {
-      newAchievements.allHardware = true;
-      achievementUnlocked = true;
-    }
-    
-    if (achievementUnlocked) {
-      setAchievements(newAchievements);
-      
-      toast({
-        title: "Achievement Unlocked!",
-        description: "You've unlocked a new mining achievement!",
-      });
-      
-      if (showEffects) {
-        triggerConfetti();
-      }
-    }
-  };
-  
-  // Buy hardware
-  const buyHardware = (type: string) => {
-    const hardware = HARDWARE_OPTIONS.find(h => h.id === type);
-    if (!hardware) return;
-    
-    if (balance >= hardware.initialCost) {
-      setBalance(prev => prev - hardware.initialCost);
-      setOwnedHardware(prev => ({
-        ...prev,
-        [type]: (prev[type] || 0) + 1
-      }));
-      
-      toast({
-        title: "Hardware Purchased",
-        description: `You purchased a new ${hardware.name}`,
-      });
-      
-      // Check for achievement
-      if (ownedHardware.cpu > 0 && ownedHardware.gpu > 0 && ownedHardware.asic > 0) {
-        if (!achievements.allHardware) {
-          setAchievements(prev => ({ ...prev, allHardware: true }));
-          
-          toast({
-            title: "Achievement Unlocked!",
-            description: "You've collected all types of mining hardware!",
-          });
-          
-          if (showEffects) {
-            triggerConfetti();
-          }
-        }
-      }
-    } else {
-      toast({
-        title: "Insufficient Funds",
-        description: `You need ${hardware.initialCost} AVI to purchase this hardware`,
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Buy upgrade
-  const buyUpgrade = (type: string) => {
-    const currentLevel = upgrades[type] || 0;
-    const cost = calculateUpgradeCost(type, currentLevel);
-    
-    if (balance >= cost) {
-      setBalance(prev => prev - cost);
-      setUpgrades(prev => ({
-        ...prev,
-        [type]: currentLevel + 1
-      }));
-      
-      toast({
-        title: "Upgrade Purchased",
-        description: `You upgraded your ${type} to level ${currentLevel + 1}`,
-      });
-    } else {
-      toast({
-        title: "Insufficient Funds",
-        description: `You need ${cost} AVI to purchase this upgrade`,
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Calculate upgrade cost
-  const calculateUpgradeCost = (type: string, level: number) => {
-    const baseCost = {
-      cooling: 50,
-      efficiency: 75,
-      overclocking: 100,
-      luck: 150
-    };
-    
-    // Cost increases with each level
-    return Math.floor(baseCost[type as keyof typeof baseCost] * Math.pow(1.5, level));
-  };
-  
-  // Trigger confetti effect
-  const triggerConfetti = () => {
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-  };
-  
-  // Clean up interval on unmount
-  useEffect(() => {
-    return () => {
-      if (miningInterval.current) {
-        clearInterval(miningInterval.current);
-      }
-    };
-  }, []);
-  
+  ]);
+
   // Load saved data from localStorage
   useEffect(() => {
     const savedData = localStorage.getItem('avilasha_mining_data');
     if (savedData) {
       try {
         const data = JSON.parse(savedData);
-        setTotalMined(data.totalMined || 0);
-        setBalance(data.balance || 100);
-        setMiningLevel(data.miningLevel || 1);
-        setExperience(data.experience || 0);
-        setNextLevelExp(data.nextLevelExp || 100);
-        setOwnedHardware(data.ownedHardware || { cpu: 1, gpu: 0, asic: 0 });
-        setUpgrades(data.upgrades || { cooling: 0, efficiency: 0, overclocking: 0, luck: 0 });
-        setAchievements(data.achievements || {
-          firstMine: false,
-          reach10: false,
-          reach100: false,
-          reach1000: false,
-          level5: false,
-          level10: false,
-          allHardware: false
+        setHardware(data.hardware || hardware);
+        setStats({
+          ...data.stats,
+          startTime: data.stats?.startTime || Date.now()
         });
+        setBalance(data.balance || balance);
+        setUpgrades(data.upgrades || upgrades);
+        setAchievements(data.achievements || achievements);
+        setActiveHardware(data.activeHardware || activeHardware);
       } catch (error) {
-        console.error('Error loading mining data:', error);
+        console.error('Failed to load mining data:', error);
       }
     }
   }, []);
-  
+
   // Save data to localStorage
   useEffect(() => {
-    const dataToSave = {
-      totalMined,
-      balance,
-      miningLevel,
-      experience,
-      nextLevelExp,
-      ownedHardware,
-      upgrades,
-      achievements
+    const saveData = () => {
+      localStorage.setItem('avilasha_mining_data', JSON.stringify({
+        hardware,
+        stats,
+        balance,
+        upgrades,
+        achievements,
+        activeHardware
+      }));
     };
+
+    // Save every 30 seconds and on unmount
+    const saveInterval = setInterval(saveData, 30000);
+    return () => {
+      clearInterval(saveInterval);
+      saveData();
+    };
+  }, [hardware, stats, balance, upgrades, achievements, activeHardware]);
+
+  // Calculate mining rewards
+  const calculateReward = () => {
+    const activeDevice = hardware.find(h => h.id === activeHardware);
+    if (!activeDevice) return 0;
     
-    localStorage.setItem('avilasha_mining_data', JSON.stringify(dataToSave));
-  }, [totalMined, balance, miningLevel, experience, nextLevelExp, ownedHardware, upgrades, achievements]);
-  
-  return (
-    <div className="animate-fade-in relative">
-      {showEffects && isMining && <SplashCursor />}
+    // Base reward calculation
+    let reward = activeDevice.hashrate * 0.01;
+    
+    // Apply luck upgrade if available
+    const luckUpgrade = upgrades.find(u => u.effect.type === 'luck' && u.applied);
+    if (luckUpgrade) {
+      reward *= (1 + luckUpgrade.effect.value);
+    }
+    
+    return reward;
+  };
+
+  // Start mining
+  const startMining = () => {
+    if (isMining) return;
+    
+    setIsMining(true);
+    const interval = setInterval(() => {
+      setMiningProgress(prev => {
+        if (prev >= 100) {
+          // Mining cycle complete
+          const reward = calculateReward();
+          setStats(prev => ({
+            ...prev,
+            totalMined: prev.totalMined + reward,
+            lastPayout: reward
+          }));
+          setBalance(prev => prev + reward);
+          
+          // Check achievements
+          checkAchievements(reward);
+          
+          return 0;
+        }
+        return prev + 2; // Progress speed
+      });
+    }, 100);
+    
+    setMiningInterval(interval);
+  };
+
+  // Stop mining
+  const stopMining = () => {
+    if (!isMining) return;
+    
+    setIsMining(false);
+    if (miningInterval) {
+      clearInterval(miningInterval);
+      setMiningInterval(null);
+    }
+  };
+
+  // Check and update achievements
+  const checkAchievements = (reward: number) => {
+    let updated = false;
+    const newAchievements = achievements.map(achievement => {
+      if (achievement.unlocked) return achievement;
       
+      let requirementMet = false;
+      
+      switch (achievement.type) {
+        case 'mined':
+          requirementMet = stats.totalMined + reward >= achievement.requirement;
+          break;
+        case 'hashrate':
+          requirementMet = stats.hashrate >= achievement.requirement;
+          break;
+        case 'efficiency':
+          requirementMet = stats.efficiency >= achievement.requirement;
+          break;
+        case 'upgrades':
+          requirementMet = upgrades.filter(u => u.applied).length >= achievement.requirement;
+          break;
+      }
+      
+      if (requirementMet && !achievement.unlocked) {
+        updated = true;
+        
+        // Show achievement notification
+        toast({
+          title: '🏆 Achievement Unlocked!',
+          description: `${achievement.name}: ${achievement.description}`,
+        });
+        
+        // Add reward
+        setBalance(prev => prev + achievement.reward);
+        
+        // Show confetti
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+        
+        // Trigger confetti animation
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+        
+        return { ...achievement, unlocked: true };
+      }
+      
+      return achievement;
+    });
+    
+    if (updated) {
+      setAchievements(newAchievements);
+    }
+  };
+
+  // Purchase hardware
+  const purchaseHardware = (id: string) => {
+    const hardwareItem = hardware.find(h => h.id === id);
+    if (!hardwareItem || hardwareItem.level > 0 || balance < hardwareItem.price) return;
+    
+    setBalance(prev => prev - hardwareItem.price);
+    
+    const updatedHardware = hardware.map(h => 
+      h.id === id ? { ...h, level: 1 } : h
+    );
+    
+    setHardware(updatedHardware);
+    
+    toast({
+      title: 'Hardware Purchased',
+      description: `You've purchased ${hardwareItem.name}!`,
+    });
+  };
+
+  // Upgrade hardware
+  const upgradeHardware = (id: string) => {
+    const hardwareItem = hardware.find(h => h.id === id);
+    if (!hardwareItem || hardwareItem.level >= hardwareItem.maxLevel) return;
+    
+    const upgradeCost = Math.round(hardwareItem.price * 0.5 * (hardwareItem.level + 1));
+    
+    if (balance < upgradeCost) {
+      toast({
+        title: 'Insufficient Funds',
+        description: `You need ${upgradeCost} AVI to upgrade this hardware.`,
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setBalance(prev => prev - upgradeCost);
+    
+    const updatedHardware = hardware.map(h => {
+      if (h.id === id) {
+        const newLevel = h.level + 1;
+        const levelMultiplier = 1 + (newLevel * 0.2);
+        
+        return {
+          ...h,
+          level: newLevel,
+          hashrate: h.type === 'CPU' ? 0.5 * levelMultiplier : 
+                    h.type === 'GPU' ? 30 * levelMultiplier : 
+                    100 * levelMultiplier,
+          efficiency: h.efficiency * (1 + (newLevel * 0.05))
+        };
+      }
+      return h;
+    });
+    
+    setHardware(updatedHardware);
+    
+    // Update stats if this is the active hardware
+    if (id === activeHardware) {
+      const updatedItem = updatedHardware.find(h => h.id === id);
+      if (updatedItem) {
+        setStats(prev => ({
+          ...prev,
+          hashrate: updatedItem.hashrate,
+          efficiency: updatedItem.efficiency,
+          power: updatedItem.power
+        }));
+      }
+    }
+    
+    toast({
+      title: 'Hardware Upgraded',
+      description: `You've upgraded your ${hardwareItem.name} to level ${hardwareItem.level + 1}!`,
+    });
+  };
+
+  // Purchase upgrade
+  const purchaseUpgrade = (id: string) => {
+    const upgrade = upgrades.find(u => u.id === id);
+    if (!upgrade || upgrade.applied || balance < upgrade.cost) return;
+    
+    setBalance(prev => prev - upgrade.cost);
+    
+    const updatedUpgrades = upgrades.map(u => 
+      u.id === id ? { ...u, applied: true } : u
+    );
+    
+    setUpgrades(updatedUpgrades);
+    
+    // Apply upgrade effect
+    const activeDevice = hardware.find(h => h.id === activeHardware);
+    if (activeDevice) {
+      switch (upgrade.effect.type) {
+        case 'hashrate':
+          setStats(prev => ({
+            ...prev,
+            hashrate: prev.hashrate * (1 + upgrade.effect.value)
+          }));
+          break;
+        case 'power':
+          setStats(prev => ({
+            ...prev,
+            power: prev.power * (1 + upgrade.effect.value)
+          }));
+          break;
+        case 'efficiency':
+          setStats(prev => ({
+            ...prev,
+            efficiency: prev.efficiency * (1 + upgrade.effect.value)
+          }));
+          break;
+        // Luck is applied directly in reward calculation
+      }
+    }
+    
+    toast({
+      title: 'Upgrade Purchased',
+      description: `You've purchased ${upgrade.name}!`,
+    });
+    
+    // Check for upgrade achievement
+    checkAchievements(0);
+  };
+
+  // Switch active hardware
+  const switchHardware = (id: string) => {
+    const hardwareItem = hardware.find(h => h.id === id);
+    if (!hardwareItem || hardwareItem.level === 0) return;
+    
+    setActiveHardware(id);
+    
+    // Update stats based on new hardware
+    setStats(prev => ({
+      ...prev,
+      hashrate: hardwareItem.hashrate,
+      efficiency: hardwareItem.efficiency,
+      power: hardwareItem.power
+    }));
+    
+    // Restart mining if it was active
+    if (isMining) {
+      stopMining();
+      setTimeout(startMining, 100);
+    }
+    
+    toast({
+      title: 'Hardware Switched',
+      description: `Now mining with ${hardwareItem.name}`,
+    });
+  };
+
+  // Format number with suffix
+  const formatNumber = (num: number, decimals: number = 2) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(decimals) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(decimals) + 'K';
+    }
+    return num.toFixed(decimals);
+  };
+
+  // Calculate uptime
+  const getUptime = () => {
+    const seconds = Math.floor((Date.now() - stats.startTime) / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) {
+      return `${days}d ${hours % 24}h`;
+    }
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    }
+    return `${minutes}m ${seconds % 60}s`;
+  };
+
+  // Calculate upgrade cost for hardware
+  const getUpgradeCost = (item: MiningHardware) => {
+    return Math.round(item.price * 0.5 * (item.level + 1));
+  };
+
+  // Calculate mining efficiency (AVI per watt)
+  const getMiningEfficiency = () => {
+    if (stats.power === 0) return 0;
+    return (stats.hashrate * 0.01) / stats.power;
+  };
+
+  // Render hardware card
+  const renderHardwareCard = (item: MiningHardware) => {
+    const isActive = activeHardware === item.id;
+    const isOwned = item.level > 0;
+    const canUpgrade = isOwned && item.level < item.maxLevel;
+    const upgradeCost = getUpgradeCost(item);
+    
+    return (
+      <Card key={item.id} className={`transition-all duration-300 ${isActive ? 'border-primary shadow-lg' : ''}`}>
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <span className={`p-1.5 rounded-full ${isActive ? 'bg-primary text-white' : 'bg-muted'}`}>
+                  {item.icon}
+                </span>
+                {item.name}
+              </CardTitle>
+              <CardDescription>
+                Level {item.level}/{item.maxLevel} {item.type} Miner
+              </CardDescription>
+            </div>
+            <Badge variant={isActive ? "default" : "outline"}>
+              {isActive ? "Active" : item.type}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pb-2">
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div>
+              <div className="text-xs text-muted-foreground">Hashrate</div>
+              <div className="font-medium">{formatNumber(item.hashrate)} H/s</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Power</div>
+              <div className="font-medium">{item.power}W</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Efficiency</div>
+              <div className="font-medium">{item.efficiency.toFixed(4)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Est. Reward</div>
+              <div className="font-medium">{(item.hashrate * 0.01).toFixed(4)} AVI/h</div>
+            </div>
+          </div>
+          
+          {isOwned && canUpgrade && (
+            <div className="mb-3">
+              <div className="text-xs text-muted-foreground mb-1">Level Progress</div>
+              <div className="flex items-center gap-2">
+                <Progress value={(item.level / item.maxLevel) * 100} className="h-2" />
+                <span className="text-xs">{item.level}/{item.maxLevel}</span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex gap-2">
+          {!isOwned ? (
+            <Button 
+              onClick={() => purchaseHardware(item.id)} 
+              disabled={balance < item.price}
+              className="w-full"
+            >
+              Buy for {item.price} AVI
+            </Button>
+          ) : (
+            <>
+              {!isActive && (
+                <Button 
+                  onClick={() => switchHardware(item.id)} 
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Select
+                </Button>
+              )}
+              
+              {canUpgrade && (
+                <Button 
+                  onClick={() => upgradeHardware(item.id)} 
+                  disabled={balance < upgradeCost}
+                  className={`flex-1 ${isActive ? 'w-full' : ''}`}
+                >
+                  Upgrade ({upgradeCost} AVI)
+                </Button>
+              )}
+            </>
+          )}
+        </CardFooter>
+      </Card>
+    );
+  };
+
+  return (
+    <div className="animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-1 flex items-center gap-2">
-          <Pickaxe className="h-8 w-8 text-primary" />
-          <span className="cyberpunk-text">Crypto Mining</span>
-        </h1>
+        <h1 className="text-3xl font-bold mb-1 cyberpunk-text">Mining Center</h1>
         <p className="text-muted-foreground">Mine AVI tokens with your hardware</p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main mining panel */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="border-primary/20 shadow-lg gradient-bg overflow-hidden">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Cpu className="h-5 w-5 text-primary" />
-                    Mining Control Center
-                  </CardTitle>
-                  <CardDescription>
-                    Level {miningLevel} Miner • {experience}/{nextLevelExp} XP
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={isMining ? "default" : "outline"} className={isMining ? "bg-green-500 text-white" : ""}>
-                    {isMining ? "Mining Active" : "Mining Inactive"}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
+      {/* Mining Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Balance Card */}
+        <Card className="md:col-span-2 gradient-bg">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-yellow-500" />
+              AVI Balance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-2">
+              <div className="text-4xl font-bold neon-text">{formatNumber(balance, 4)}</div>
+              <div className="text-lg text-muted-foreground mb-1">AVI</div>
+            </div>
             
-            <CardContent className="pb-2">
-              {/* Mining progress */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Mining Progress</span>
-                  <span className="text-sm">{miningProgress.toFixed(1)}%</span>
-                </div>
-                <Progress value={miningProgress} className="h-3" />
+            {stats.lastPayout > 0 && (
+              <div className="text-sm text-green-500 mt-1">
+                +{stats.lastPayout.toFixed(4)} AVI last payout
               </div>
+            )}
+          </CardContent>
+          <CardFooter>
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-muted-foreground">Mining Progress</span>
+                <span className="text-sm">{miningProgress.toFixed(0)}%</span>
+              </div>
+              <Progress value={miningProgress} className="h-2 mb-4" />
               
-              {/* Mining stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-card/50 p-3 rounded-lg">
-                  <div className="text-xs text-muted-foreground">Hash Rate</div>
-                  <div className="text-xl font-bold flex items-center gap-1">
-                    <Zap className="h-4 w-4 text-yellow-500" />
-                    {miningRate} H/s
-                  </div>
-                </div>
-                
-                <div className="bg-card/50 p-3 rounded-lg">
-                  <div className="text-xs text-muted-foreground">Power Usage</div>
-                  <div className="text-xl font-bold flex items-center gap-1">
-                    <Bolt className="h-4 w-4 text-red-500" />
-                    {powerUsage} W
-                  </div>
-                </div>
-                
-                <div className="bg-card/50 p-3 rounded-lg">
-                  <div className="text-xs text-muted-foreground">Hourly Profit</div>
-                  <div className="text-xl font-bold flex items-center gap-1">
-                    <Coins className="h-4 w-4 text-green-500" />
-                    {calculateHourlyProfit()} AVI
-                  </div>
-                </div>
-                
-                <div className="bg-card/50 p-3 rounded-lg">
-                  <div className="text-xs text-muted-foreground">Last Reward</div>
-                  <div className="text-xl font-bold flex items-center gap-1">
-                    <Trophy className="h-4 w-4 text-amber-500" />
-                    {lastReward.toFixed(4)} AVI
-                  </div>
-                </div>
-              </div>
-              
-              {/* Mining controls */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <Label className="mb-2 block">Mining Power ({miningPower}%)</Label>
-                  <Slider
-                    value={[miningPower]}
-                    onValueChange={(value) => setMiningPower(value[0])}
-                    min={10}
-                    max={100}
-                    step={1}
-                    disabled={isMining}
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>Eco</span>
-                    <span>Balanced</span>
-                    <span>Performance</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="mb-2 block">Mining Speed ({miningSpeed}x)</Label>
-                  <Slider
-                    value={[miningSpeed]}
-                    onValueChange={(value) => setMiningSpeed(value[0])}
-                    min={0.5}
-                    max={2}
-                    step={0.1}
-                    disabled={isMining}
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>Slow</span>
-                    <span>Normal</span>
-                    <span>Fast</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Mining settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <Label className="mb-2 block">Difficulty</Label>
-                  <select
-                    className="w-full p-2 rounded-md border border-input bg-background"
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value)}
-                    disabled={isMining}
-                  >
-                    <option value="easy">Easy (Lower rewards, higher success)</option>
-                    <option value="medium">Medium (Balanced)</option>
-                    <option value="hard">Hard (Higher rewards, lower success)</option>
-                    <option value="extreme">Extreme (Highest rewards, lowest success)</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <Label className="mb-2 block">Mining Pool</Label>
-                  <select
-                    className="w-full p-2 rounded-md border border-input bg-background"
-                    value={miningPool}
-                    onChange={(e) => setMiningPool(e.target.value)}
-                    disabled={isMining}
-                  >
-                    {MINING_POOLS.map(pool => (
-                      <option key={pool.id} value={pool.id}>
-                        {pool.name} (Fee: {pool.fee}%)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              
-              {/* Additional options */}
-              <div className="flex flex-wrap gap-6 mb-6">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="auto-reinvest"
-                    checked={autoReinvest}
-                    onCheckedChange={setAutoReinvest}
-                  />
-                  <Label htmlFor="auto-reinvest">Auto-reinvest rewards</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="show-effects"
-                    checked={showEffects}
-                    onCheckedChange={setShowEffects}
-                  />
-                  <Label htmlFor="show-effects">Show visual effects</Label>
-                </div>
-              </div>
-            </CardContent>
-            
-            <CardFooter>
-              <Button 
-                onClick={toggleMining} 
-                className={`w-full ${isMining ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary/90'} text-white font-bold py-3 text-lg`}
-              >
+              <div className="flex gap-2">
                 {isMining ? (
-                  <span className="flex items-center gap-2">
-                    <Flame className="h-5 w-5 animate-pulse" />
+                  <Button 
+                    onClick={stopMining} 
+                    variant="destructive"
+                    className="flex-1"
+                  >
                     Stop Mining
-                  </span>
+                  </Button>
                 ) : (
-                  <span className="flex items-center gap-2">
-                    <Pickaxe className="h-5 w-5" />
+                  <Button 
+                    onClick={startMining} 
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
                     Start Mining
-                  </span>
+                  </Button>
                 )}
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <Tabs defaultValue="hardware" className="w-full">
-            <TabsList className="grid grid-cols-3 w-full">
-              <TabsTrigger value="hardware" className="flex items-center gap-2">
-                <Cpu className="h-4 w-4" />
-                <span>Hardware</span>
-              </TabsTrigger>
-              <TabsTrigger value="upgrades" className="flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                <span>Upgrades</span>
-              </TabsTrigger>
-              <TabsTrigger value="stats" className="flex items-center gap-2">
-                <BarChart className="h-4 w-4" />
-                <span>Stats</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="hardware" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mining Hardware</CardTitle>
-                  <CardDescription>Purchase and manage your mining equipment</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {HARDWARE_OPTIONS.map(item => (
-                      <Card key={item.id} className={`border ${hardware === item.id ? 'border-primary' : 'border-border'}`}>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base flex justify-between">
-                            <span>{item.name}</span>
-                            <Badge>{ownedHardware[item.id] || 0}</Badge>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pb-2">
-                          <div className="space-y-1 text-sm">
-                            <div className="flex justify-between">
-                              <span>Hash Rate:</span>
-                              <span>{item.hashRate} H/s</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Power Usage:</span>
-                              <span>{item.powerUsage} W</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Cost:</span>
-                              <span>{item.initialCost} AVI</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => setHardware(item.id)}
-                            disabled={ownedHardware[item.id] <= 0}
-                          >
-                            Select
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => buyHardware(item.id)}
-                            disabled={balance < item.initialCost}
-                          >
-                            Buy
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="upgrades" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mining Upgrades</CardTitle>
-                  <CardDescription>Improve your mining operation</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex justify-between">
-                          <span>Cooling System</span>
-                          <Badge>Level {upgrades.cooling || 0}</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Reduces power consumption by 8% per level
-                        </p>
-                        <div className="flex justify-between text-sm">
-                          <span>Current Bonus:</span>
-                          <span>-{((upgrades.cooling || 0) * 8)}% power usage</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Upgrade Cost:</span>
-                          <span>{calculateUpgradeCost('cooling', upgrades.cooling || 0)} AVI</span>
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button 
-                          className="w-full"
-                          onClick={() => buyUpgrade('cooling')}
-                          disabled={balance < calculateUpgradeCost('cooling', upgrades.cooling || 0)}
-                        >
-                          Upgrade Cooling
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex justify-between">
-                          <span>Efficiency</span>
-                          <Badge>Level {upgrades.efficiency || 0}</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Increases hash rate by 10% per level
-                        </p>
-                        <div className="flex justify-between text-sm">
-                          <span>Current Bonus:</span>
-                          <span>+{((upgrades.efficiency || 0) * 10)}% hash rate</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Upgrade Cost:</span>
-                          <span>{calculateUpgradeCost('efficiency', upgrades.efficiency || 0)} AVI</span>
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button 
-                          className="w-full"
-                          onClick={() => buyUpgrade('efficiency')}
-                          disabled={balance < calculateUpgradeCost('efficiency', upgrades.efficiency || 0)}
-                        >
-                          Upgrade Efficiency
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex justify-between">
-                          <span>Overclocking</span>
-                          <Badge>Level {upgrades.overclocking || 0}</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Increases hash rate by 15% but power usage by 20% per level
-                        </p>
-                        <div className="flex justify-between text-sm">
-                          <span>Current Bonus:</span>
-                          <span>+{((upgrades.overclocking || 0) * 15)}% hash rate</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Current Penalty:</span>
-                          <span>+{((upgrades.overclocking || 0) * 20)}% power usage</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Upgrade Cost:</span>
-                          <span>{calculateUpgradeCost('overclocking', upgrades.overclocking || 0)} AVI</span>
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button 
-                          className="w-full"
-                          onClick={() => buyUpgrade('overclocking')}
-                          disabled={balance < calculateUpgradeCost('overclocking', upgrades.overclocking || 0)}
-                        >
-                          Upgrade Overclocking
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex justify-between">
-                          <span>Luck</span>
-                          <Badge>Level {upgrades.luck || 0}</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Increases mining rewards by 5% and jackpot chance by 10% per level
-                        </p>
-                        <div className="flex justify-between text-sm">
-                          <span>Current Bonus:</span>
-                          <span>+{((upgrades.luck || 0) * 5)}% rewards</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Jackpot Chance:</span>
-                          <span>{5 + ((upgrades.luck || 0) * 0.5)}%</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Upgrade Cost:</span>
-                          <span>{calculateUpgradeCost('luck', upgrades.luck || 0)} AVI</span>
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button 
-                          className="w-full"
-                          onClick={() => buyUpgrade('luck')}
-                          disabled={balance < calculateUpgradeCost('luck', upgrades.luck || 0)}
-                        >
-                          Upgrade Luck
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="stats" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mining Statistics</CardTitle>
-                  <CardDescription>Your mining performance and history</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-medium mb-4">Performance Metrics</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Total Mined</span>
-                            <span className="text-sm font-medium">{totalMined.toFixed(4)} AVI</span>
-                          </div>
-                          <Progress value={Math.min(totalMined / 10, 100)} className="h-2" />
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Current Balance</span>
-                            <span className="text-sm font-medium">{balance.toFixed(2)} AVI</span>
-                          </div>
-                          <Progress value={Math.min(balance / 100, 100)} className="h-2" />
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Mining Level</span>
-                            <span className="text-sm font-medium">{miningLevel}</span>
-                          </div>
-                          <Progress value={(experience / nextLevelExp) * 100} className="h-2" />
-                          <div className="flex justify-between mt-1">
-                            <span className="text-xs text-muted-foreground">{experience} XP</span>
-                            <span className="text-xs text-muted-foreground">{nextLevelExp} XP</span>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Session Rewards</span>
-                            <span className="text-sm font-medium">{sessionRewards.toFixed(4)} AVI</span>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Electricity Cost</span>
-                            <div className="flex items-center">
-                              <Input
-                                type="number"
-                                value={electricityCost}
-                                onChange={(e) => setElectricityCost(parseFloat(e.target.value))}
-                                className="w-20 h-6 text-xs"
-                                step="0.01"
-                                min="0"
-                              />
-                              <span className="ml-1 text-xs">$/kWh</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-4">Recent Mining Activity</h3>
-                      <div className="max-h-60 overflow-y-auto pr-2">
-                        {miningHistory.length === 0 ? (
-                          <div className="text-center text-muted-foreground py-8">
-                            No mining activity yet
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {miningHistory.map((entry, index) => (
-                              <div key={index} className="flex justify-between items-center p-2 bg-card/50 rounded-md">
-                                <div className="flex items-center gap-2">
-                                  <Coins className="h-4 w-4 text-primary" />
-                                  <span>{entry.amount.toFixed(4)} AVI</span>
-                                </div>
-                                <span className="text-xs text-muted-foreground">
-                                  {new Date(entry.timestamp).toLocaleTimeString()}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <Card className="border-primary/20 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5 text-primary" />
-                Mining Wallet
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center py-4">
-                <div className="text-4xl font-bold mb-2 neon-text">{balance.toFixed(2)}</div>
-                <div className="text-sm text-muted-foreground">AVI Tokens</div>
-                
-                <div className="w-full mt-6">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Total Mined</span>
-                    <span>{totalMined.toFixed(4)} AVI</span>
-                  </div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Mining Rate</span>
-                    <span>{miningRate} H/s</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Hourly Profit</span>
-                    <span className={calculateHourlyProfit() >= 0 ? "text-green-500" : "text-red-500"}>
-                      {calculateHourlyProfit() >= 0 ? "+" : ""}{calculateHourlyProfit()} AVI
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-primary/20 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                Achievements
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className={`p-2 rounded-md flex items-center gap-2 ${achievements.firstMine ? 'bg-primary/20' : 'bg-muted/50 opacity-70'}`}>
-                  <Pickaxe className={`h-5 w-5 ${achievements.firstMine ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <div>
-                    <div className="font-medium">First Mine</div>
-                    <div className="text-xs text-muted-foreground">Mine your first AVI token</div>
-                  </div>
-                  {achievements.firstMine && <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />}
-                </div>
-                
-                <div className={`p-2 rounded-md flex items-center gap-2 ${achievements.reach10 ? 'bg-primary/20' : 'bg-muted/50 opacity-70'}`}>
-                  <Gem className={`h-5 w-5 ${achievements.reach10 ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <div>
-                    <div className="font-medium">Novice Miner</div>
-                    <div className="text-xs text-muted-foreground">Mine 10 AVI tokens</div>
-                  </div>
-                  {achievements.reach10 && <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />}
-                </div>
-                
-                <div className={`p-2 rounded-md flex items-center gap-2 ${achievements.reach100 ? 'bg-primary/20' : 'bg-muted/50 opacity-70'}`}>
-                  <Gift className={`h-5 w-5 ${achievements.reach100 ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <div>
-                    <div className="font-medium">Professional Miner</div>
-                    <div className="text-xs text-muted-foreground">Mine 100 AVI tokens</div>
-                  </div>
-                  {achievements.reach100 && <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />}
-                </div>
-                
-                <div className={`p-2 rounded-md flex items-center gap-2 ${achievements.reach1000 ? 'bg-primary/20' : 'bg-muted/50 opacity-70'}`}>
-                  <Rocket className={`h-5 w-5 ${achievements.reach1000 ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <div>
-                    <div className="font-medium">Mining Magnate</div>
-                    <div className="text-xs text-muted-foreground">Mine 1000 AVI tokens</div>
-                  </div>
-                  {achievements.reach1000 && <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />}
-                </div>
-                
-                <div className={`p-2 rounded-md flex items-center gap-2 ${achievements.level5 ? 'bg-primary/20' : 'bg-muted/50 opacity-70'}`}>
-                  <Layers className={`h-5 w-5 ${achievements.level5 ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <div>
-                    <div className="font-medium">Experienced</div>
-                    <div className="text-xs text-muted-foreground">Reach mining level 5</div>
-                  </div>
-                  {achievements.level5 && <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />}
-                </div>
-                
-                <div className={`p-2 rounded-md flex items-center gap-2 ${achievements.level10 ? 'bg-primary/20' : 'bg-muted/50 opacity-70'}`}>
-                  <Landmark className={`h-5 w-5 ${achievements.level10 ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <div>
-                    <div className="font-medium">Mining Master</div>
-                    <div className="text-xs text-muted-foreground">Reach mining level 10</div>
-                  </div>
-                  {achievements.level10 && <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />}
-                </div>
-                
-                <div className={`p-2 rounded-md flex items-center gap-2 ${achievements.allHardware ? 'bg-primary/20' : 'bg-muted/50 opacity-70'}`}>
-                  <Lightbulb className={`h-5 w-5 ${achievements.allHardware ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <div>
-                    <div className="font-medium">Hardware Collector</div>
-                    <div className="text-xs text-muted-foreground">Own all types of mining hardware</div>
-                  </div>
-                  {achievements.allHardware && <Sparkles className="h-4 w-4 text-yellow-500 ml-auto" />}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-primary/20 shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Mining Network
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span>Network Difficulty</span>
-                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500">
-                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                  </Badge>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span>Network Hash Rate</span>
-                  <span className="text-sm">1.45 TH/s</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span>Active Miners</span>
-                  <span className="text-sm">12,458</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span>Block Reward</span>
-                  <span className="text-sm">{DIFFICULTY_LEVELS[difficulty as keyof typeof DIFFICULTY_LEVELS].reward} AVI</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span>Your Pool Share</span>
-                  <span className="text-sm">{(miningRate / 14500000000 * 100).toFixed(8)}%</span>
-                </div>
-                
-                <div className="mt-4 pt-4 border-t border-border">
-                  <div className="text-sm font-medium mb-2">Network Difficulty Trend</div>
-                  <div className="flex items-center gap-1">
-                    <ArrowUp className="h-4 w-4 text-red-500" />
-                    <span className="text-xs text-muted-foreground">Increasing (Next adjustment: 6h 42m)</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-      
-      {/* Mining rewards popup */}
-      <AnimatePresence>
-        {lastReward > 0 && isMining && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.3 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-            className="fixed bottom-10 right-10 bg-card p-4 rounded-lg shadow-lg border border-primary z-50 max-w-xs"
-          >
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/20 p-3 rounded-full">
-                <Coins className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">Block Mined!</h3>
-                <p className="text-sm">You earned {lastReward.toFixed(4)} AVI tokens</p>
               </div>
             </div>
-          </motion.div>
+          </CardFooter>
+        </Card>
+        
+        {/* Stats Card */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart className="h-5 w-5 text-primary" />
+              Mining Stats
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-muted-foreground">Hashrate</div>
+                <div className="font-medium">{formatNumber(stats.hashrate)} H/s</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Power</div>
+                <div className="font-medium">{stats.power}W</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Efficiency</div>
+                <div className="font-medium">{getMiningEfficiency().toFixed(6)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Uptime</div>
+                <div className="font-medium">{getUptime()}</div>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <div className="w-full">
+              <div className="text-xs text-muted-foreground mb-1">Total Mined</div>
+              <div className="text-xl font-bold">{formatNumber(stats.totalMined, 4)} AVI</div>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+      
+      <Tabs defaultValue="hardware" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="hardware" className="flex items-center gap-2">
+            <HardDrive className="h-4 w-4" />
+            Hardware
+          </TabsTrigger>
+          <TabsTrigger value="upgrades" className="flex items-center gap-2">
+            <Cog className="h-4 w-4" />
+            Upgrades
+          </TabsTrigger>
+          <TabsTrigger value="achievements" className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
+            Achievements
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="hardware">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {hardware.map(renderHardwareCard)}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="upgrades">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {upgrades.map(upgrade => (
+              <Card key={upgrade.id} className={upgrade.applied ? 'border-green-500' : ''}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <span className={`p-1.5 rounded-full ${upgrade.applied ? 'bg-green-500 text-white' : 'bg-muted'}`}>
+                      {upgrade.icon}
+                    </span>
+                    {upgrade.name}
+                  </CardTitle>
+                  <CardDescription>{upgrade.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="pb-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Effect:</span>
+                    <Badge variant="outline">
+                      {upgrade.effect.type === 'power' ? 'Power Consumption' : 
+                       upgrade.effect.type === 'hashrate' ? 'Hashrate' :
+                       upgrade.effect.type === 'efficiency' ? 'Efficiency' : 'Mining Luck'}
+                       {' '}
+                      {upgrade.effect.value > 0 ? '+' : ''}{(upgrade.effect.value * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  {upgrade.applied ? (
+                    <Badge className="w-full justify-center py-2 bg-green-500">
+                      Applied
+                    </Badge>
+                  ) : (
+                    <Button 
+                      onClick={() => purchaseUpgrade(upgrade.id)} 
+                      disabled={balance < upgrade.cost}
+                      className="w-full"
+                    >
+                      Purchase for {upgrade.cost} AVI
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="achievements">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {achievements.map(achievement => (
+              <Card key={achievement.id} className={achievement.unlocked ? 'border-yellow-500' : ''}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <span className={`p-1.5 rounded-full ${achievement.unlocked ? 'bg-yellow-500 text-white' : 'bg-muted'}`}>
+                      {achievement.icon}
+                    </span>
+                    {achievement.name}
+                  </CardTitle>
+                  <CardDescription>{achievement.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="pb-2">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Progress:</span>
+                      <span>
+                        {achievement.type === 'mined' ? formatNumber(stats.totalMined, 1) : 
+                         achievement.type === 'hashrate' ? formatNumber(stats.hashrate, 1) :
+                         achievement.type === 'efficiency' ? stats.efficiency.toFixed(2) :
+                         upgrades.filter(u => u.applied).length}
+                        /{formatNumber(achievement.requirement, 1)}
+                      </span>
+                    </div>
+                    
+                    <Progress 
+                      value={achievement.unlocked ? 100 : 
+                             achievement.type === 'mined' ? Math.min(100, (stats.totalMined / achievement.requirement) * 100) : 
+                             achievement.type === 'hashrate' ? Math.min(100, (stats.hashrate / achievement.requirement) * 100) :
+                             achievement.type === 'efficiency' ? Math.min(100, (stats.efficiency / achievement.requirement) * 100) :
+                             Math.min(100, (upgrades.filter(u => u.applied).length / achievement.requirement) * 100)} 
+                      className="h-2" 
+                    />
+                    
+                    <div className="flex items-center gap-1 text-sm">
+                      <Coins className="h-4 w-4 text-yellow-500" />
+                      <span>Reward: {achievement.reward} AVI</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  {achievement.unlocked ? (
+                    <Badge className="w-full justify-center py-2 bg-yellow-500">
+                      Unlocked
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="w-full justify-center py-2">
+                      Locked
+                    </Badge>
+                  )}
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Mining Activity Feed */}
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Mining Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 border rounded-md">
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-500/20 p-2 rounded-full">
+                    <Coins className="h-4 w-4 text-green-500" />
+                  </div>
+                  <div>
+                    <div className="font-medium">Mining Reward</div>
+                    <div className="text-sm text-muted-foreground">+{stats.lastPayout.toFixed(4)} AVI</div>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">Just now</div>
+              </div>
+              
+              {achievements.filter(a => a.unlocked).map((achievement, index) => (
+                <div key={achievement.id} className="flex items-center justify-between p-3 border rounded-md">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-yellow-500/20 p-2 rounded-full">
+                      <Trophy className="h-4 w-4 text-yellow-500" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Achievement Unlocked: {achievement.name}</div>
+                      <div className="text-sm text-muted-foreground">+{achievement.reward} AVI reward</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{index === 0 ? '2m ago' : index === 1 ? '15m ago' : '1h ago'}</div>
+                </div>
+              ))}
+              
+              {upgrades.filter(u => u.applied).map((upgrade, index) => (
+                <div key={upgrade.id} className="flex items-center justify-between p-3 border rounded-md">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-500/20 p-2 rounded-full">
+                      <Cog className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Upgrade Applied: {upgrade.name}</div>
+                      <div className="text-sm text-muted-foreground">{upgrade.description}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{index === 0 ? '30m ago' : index === 1 ? '2h ago' : '5h ago'}</div>
+                </div>
+              ))}
+              
+              <div className="flex items-center justify-between p-3 border rounded-md">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/20 p-2 rounded-full">
+                    <Pickaxe className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-medium">Mining Started</div>
+                    <div className="text-sm text-muted-foreground">Using {hardware.find(h => h.id === activeHardware)?.name}</div>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">{getUptime()} ago</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Confetti effect for achievements */}
+      <AnimatePresence>
+        {showConfetti && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 pointer-events-none z-50"
+          />
         )}
       </AnimatePresence>
+      
+      {/* Mining Tips */}
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              Mining Tips
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-md">
+                <h3 className="font-medium flex items-center gap-2 mb-2">
+                  <Rocket className="h-4 w-4 text-primary" />
+                  Getting Started
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Start with the basic CPU miner and save up for more powerful hardware. Upgrade your equipment to increase mining efficiency.
+                </p>
+              </div>
+              
+              <div className="p-4 border rounded-md">
+                <h3 className="font-medium flex items-center gap-2 mb-2">
+                  <Gauge className="h-4 w-4 text-primary" />
+                  Optimize Performance
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Purchase upgrades to improve your mining efficiency. Focus on hashrate and efficiency upgrades for the best results.
+                </p>
+              </div>
+              
+              <div className="p-4 border rounded-md">
+                <h3 className="font-medium flex items-center gap-2 mb-2">
+                  <Trophy className="h-4 w-4 text-yellow-500" />
+                  Achievements
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Complete achievements to earn bonus AVI tokens. These can help you purchase better equipment faster.
+                </p>
+              </div>
+              
+              <div className="p-4 border rounded-md">
+                <h3 className="font-medium flex items-center gap-2 mb-2">
+                  <Gem className="h-4 w-4 text-blue-500" />
+                  Advanced Mining
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  ASIC miners offer the highest hashrates but consume more power. Balance your hardware choices based on your mining goals.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

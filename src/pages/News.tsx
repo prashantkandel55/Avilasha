@@ -11,28 +11,27 @@ import { Newspaper, Search, Bookmark, Share2, Calendar, TrendingUp, Clock, BarCh
 import { toast } from '@/hooks/use-toast';
 import { newsApiService, NewsItem } from '@/services/news-api';
 import { Skeleton } from "@/components/ui/skeleton";
-import { walletService } from '@/services/wallet.service';
-import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 const News = () => {
-  const [wallets, setWallets] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [topHeadlines, setTopHeadlines] = useState<NewsItem[]>([]);
   const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [showWalletModal, setShowWalletModal] = useState(false);
 
   const fetchNews = useCallback(async (page: number = 1) => {
     try {
       setError(null);
+      setLoading(true);
       const latestNews = await newsApiService.getLatestNews(page);
       setNews(prev => page === 1 ? latestNews : [...prev, ...latestNews]);
+      setLoading(false);
     } catch (err) {
       setError('Failed to load news. Please try again later.');
+      setLoading(false);
       toast({
         title: 'Error',
         description: 'Failed to load news data',
@@ -48,15 +47,6 @@ const News = () => {
     } catch (err) {
       console.error('Failed to load headlines:', err);
     }
-  }, []);
-
-  useEffect(() => {
-    async function fetchWallets() {
-      const allWallets = await walletService.getAllWallets?.() || [];
-      setWallets(allWallets);
-      setLoading(false);
-    }
-    fetchWallets();
   }, []);
 
   useEffect(() => {
@@ -84,13 +74,13 @@ const News = () => {
       setCurrentPage(1); // Reset to first page on new search
       const results = await newsApiService.searchNews(searchTerm);
       setNews(results);
+      setSearchLoading(false);
     } catch (err) {
       toast({
         title: 'Search Failed',
         description: 'Unable to search news at this time',
         variant: 'destructive',
       });
-    } finally {
       setSearchLoading(false);
     }
   };
@@ -142,49 +132,11 @@ const News = () => {
     });
   };
 
-  const filteredNews = news.filter(item => {
-    if (!searchTerm) return true;
-    return (
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
-
   const loadMore = () => {
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
     fetchNews(nextPage);
   };
-
-  if (loading) {
-    return <div className="text-center p-10">Loading news...</div>;
-  }
-
-  if (!wallets.length) {
-    return (
-      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
-        <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
-        <p className="mb-4">Connect a wallet to view crypto news.</p>
-        <button
-          className="inline-block bg-primary text-white px-6 py-2 rounded-lg shadow hover:bg-primary/90 transition"
-          onClick={() => setShowWalletModal(true)}
-        >
-          Connect Wallet
-        </button>
-        {showWalletModal && (
-          <WalletConnectModal onConnect={() => {
-            setShowWalletModal(false);
-            (async () => {
-              const allWallets = await walletService.getAllWallets?.() || [];
-              setWallets(allWallets);
-            })();
-          }} />
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto pt-6 pb-12">
@@ -341,7 +293,7 @@ const News = () => {
                       </Card>
                     ))
                   ) : (
-                    filteredNews.slice(1, 7).map((item) => (
+                    news.slice(1, 7).map((item) => (
                       <Card key={item.id}>
                         <CardContent className="p-4">
                           <div className="mb-3 relative">
@@ -424,7 +376,7 @@ const News = () => {
                         ))}
                       </div>
                     ) : (
-                      filteredNews
+                      news
                         .slice(0, 10)
                         .map((item) => (
                           <div key={item.id} className="flex items-center gap-3 py-3 border-b last:border-b-0">
@@ -478,7 +430,7 @@ const News = () => {
                   </CardHeader>
                   
                   <CardContent className="px-3">
-                    {filteredNews
+                    {news
                       .filter(item => item.saved)
                       .map((item) => (
                         <div key={item.id} className="flex items-center gap-3 py-3 border-b last:border-b-0">
@@ -512,7 +464,7 @@ const News = () => {
                         </div>
                       ))}
                     
-                    {filteredNews.filter(item => item.saved).length === 0 && (
+                    {news.filter(item => item.saved).length === 0 && (
                       <div className="text-center py-6">
                         <Bookmark className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                         <h3 className="font-medium mb-1">No Bookmarks</h3>
@@ -534,7 +486,7 @@ const News = () => {
                     <div className="space-y-4">
                       {['Bitcoin', 'Ethereum', 'Solana', 'Market'].map((coin) => {
                         // Calculate sentiment based on available news
-                        const coinNews = filteredNews.filter(item => 
+                        const coinNews = news.filter(item => 
                           item.title.toLowerCase().includes(coin.toLowerCase()) || 
                           item.summary.toLowerCase().includes(coin.toLowerCase())
                         );

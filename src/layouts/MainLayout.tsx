@@ -9,21 +9,22 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationBell from '@/components/NotificationBell';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SplashCursor } from '@/components/ui/splash-cursor';
 
 const MainLayout = () => {
   const [trackWalletOpen, setTrackWalletOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { toast } = useToast();
   const location = useLocation();
+  const [showSplashCursor, setShowSplashCursor] = useState(false);
   
   // Handle page title and notifications on route change
   useEffect(() => {
-    const path = location.pathname.replace('/', '');
-    const pageName = path.charAt(0).toUpperCase() + path.slice(1) || 'Dashboard';
-    document.title = `${pageName} | Avilasha Crypto`;
+    const currentPage = location.pathname.replace('/', '') || 'dashboard';
+    document.title = `${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)} | Avilasha Crypto`;
     
     // Show welcome toast on first load
-    if (path === '' && !localStorage.getItem('welcomed')) {
+    if (currentPage === '' && !localStorage.getItem('welcomed')) {
       setTimeout(() => {
         toast({
           title: "Welcome to Avilasha",
@@ -32,6 +33,14 @@ const MainLayout = () => {
         localStorage.setItem('welcomed', 'true');
       }, 1000);
     }
+
+    // Show splash cursor effect for 5 seconds on page change
+    setShowSplashCursor(true);
+    const timer = setTimeout(() => {
+      setShowSplashCursor(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
   }, [location, toast]);
   
   function Breadcrumbs() {
@@ -65,6 +74,7 @@ const MainLayout = () => {
   return (
     <NotificationProvider>
       <div className="min-h-screen bg-background">
+        {showSplashCursor && <SplashCursor />}
         <Header onTrackWallet={() => setTrackWalletOpen(true)} />
         <div className="absolute top-3 right-8 z-50 flex items-center gap-2">
           <ThemeSwitcher />

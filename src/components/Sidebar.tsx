@@ -14,7 +14,8 @@ import {
   HelpCircle, 
   Settings,
   Plus,
-  Gift
+  Gift,
+  Pickaxe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -81,6 +82,7 @@ const Sidebar = () => {
               <SidebarItem to="/wallets" icon={<Wallet />} label="Wallets" active={isActive('/wallets')} />
               <SidebarItem to="/defi" icon={<Database />} label="DeFi" active={isActive('/defi')} />
               <SidebarItem to="/nfts" icon={<FileImage />} label="NFTs" active={isActive('/nfts')} />
+              <SidebarItem to="/mining" icon={<Pickaxe />} label="Mining" active={isActive('/mining')} />
             </nav>
           </div>
           

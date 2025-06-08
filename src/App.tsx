@@ -25,6 +25,7 @@ const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Mining = lazy(() => import('./pages/Mining')); // Add Mining page
 
 // Create query client with defaults
 const queryClient = new QueryClient({
@@ -116,6 +117,7 @@ const App = () => {
                     <Route path="help" element={<HelpCenter />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="onboarding" element={<Onboarding />} />
+                    <Route path="mining" element={<Mining />} /> {/* Add Mining route */}
                     <Route path="not-found" element={<NotFound />} />
                     <Route path="*" element={<Navigate to="/not-found\" replace />} />
                   </Route>

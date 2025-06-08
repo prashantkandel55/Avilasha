@@ -6,32 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { 
-  Pickaxe, 
-  Cpu, 
-  Zap, 
-  Bolt, 
-  TrendingUp, 
-  BarChart, 
-  Clock, 
-  Trophy, 
-  ChevronUp, 
-  Coins, 
-  Layers, 
-  Cog, 
-  HardDrive, 
-  Gauge,
-  Sparkles,
-  Wrench,
-  Flame,
-  Fan,
-  Chip,
-  Thermometer,
-  Droplets,
-  Lightbulb,
-  Rocket,
-  Gem
-} from 'lucide-react';
+import { Pickaxe, Cpu, Zap, Bolt, TrendingUp, BarChart, Clock, Trophy, ChevronUp, Coins, Layers, Cog, HardDrive, Gauge, Sparkles, Wrench, Flame, Fan, Ship as Chip, Thermometer, Droplets, Lightbulb, Rocket, Gem } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';

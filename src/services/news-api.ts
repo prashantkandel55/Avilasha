@@ -273,7 +273,7 @@ class NewsApiService {
         id: '4',
         title: 'New DeFi Protocol Launches with $100M TVL',
         summary: 'A new decentralized finance protocol has launched with $100 million in total value locked, attracting attention from yield farmers.',
-        content: 'A new decentralized finance (DeFi) protocol has launched with an impressive $100 million in total value locked (TVL) within just 24 hours of its launch. The protocol, which offers innovative yield farming opportunities, has attracted significant attention from DeFi enthusiasts and yield farmers. The team behind the protocol has implemented several security measures, including multiple audits and a bug bounty program, to address concerns about potential vulnerabilities. The protocol's native token has seen a price increase of over 200% since its launch.',
+        content: 'A new decentralized finance (DeFi) protocol has launched with an impressive $100 million in total value locked (TVL) within just 24 hours of its launch. The protocol, which offers innovative yield farming opportunities, has attracted significant attention from DeFi enthusiasts and yield farmers. The team behind the protocol has implemented several security measures, including multiple audits and a bug bounty program, to address concerns about potential vulnerabilities. The protocol\'s native token has seen a price increase of over 200% since its launch.',
         url: 'https://example.com/news/4',
         image: 'https://via.placeholder.com/800x450?text=DeFi+News',
         source: 'DeFi Pulse',

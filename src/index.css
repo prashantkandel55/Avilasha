@@ -1,3 +1,4 @@
+@import './styles/animations.css';
 
 @tailwind base;
 @tailwind components;
@@ -115,4 +116,47 @@
   .switch-thumb {
     @apply pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0;
   }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Make the entire Electron window draggable except for interactive elements */
+.draggable-area {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* Prevent drag on buttons, inputs, etc. */
+.no-drag, button, input, textarea, select, a, .no-drag-area {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* Optional: Make header and auth card draggable */
+.auth-draggable {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* Optional: Style for window controls to ensure no-drag */
+.window-controls, .window-controls * {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }

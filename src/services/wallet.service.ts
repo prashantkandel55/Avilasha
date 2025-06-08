@@ -6,6 +6,7 @@ import { WalletStandardAdapterProvider } from '@mysten/wallet-standard';
 
 // --- Existing Imports ---
 import { COINGECKO_API_BASE, WALLET_CONFIG } from '../config/wallet.config';
+import { securityService } from './security';
 
 interface WalletBalance {
   address: string;
@@ -131,6 +132,9 @@ class WalletService {
       this.wallets.set(address, initialBalance);
       this.saveWalletsToStorage();
       
+      // Update wallet balance
+      await this.updateWalletBalance(address);
+      
       return true;
     } catch (error) {
       console.error('Error adding wallet:', error);
@@ -245,7 +249,7 @@ class WalletService {
   }
 
   // --- Multi-Chain Balance Fetching ---
-  private async updateWalletBalance(address: string, networkOverride?: string): Promise<void> {
+  async updateWalletBalance(address: string, networkOverride?: string): Promise<void> {
     try {
       const wallet = this.wallets.get(address);
       if (!wallet) return;

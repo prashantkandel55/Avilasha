@@ -7,6 +7,8 @@ import AvilashaAssistant from '@/components/AvilashaAssistant';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationBell from '@/components/NotificationBell';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const MainLayout = () => {
   const [trackWalletOpen, setTrackWalletOpen] = useState(false);
@@ -64,7 +66,8 @@ const MainLayout = () => {
     <NotificationProvider>
       <div className="min-h-screen bg-background">
         <Header onTrackWallet={() => setTrackWalletOpen(true)} />
-        <div className="absolute top-3 right-8 z-50">
+        <div className="absolute top-3 right-8 z-50 flex items-center gap-2">
+          <ThemeSwitcher />
           <NotificationBell />
         </div>
         <Sidebar />
@@ -72,7 +75,17 @@ const MainLayout = () => {
         <main className={`transition-all duration-300 ml-60 pt-16 min-h-screen`}>
           <div className="container py-6 px-4 lg:px-6 mx-auto max-w-6xl">
             <Breadcrumbs />
-            <Outlet />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
         

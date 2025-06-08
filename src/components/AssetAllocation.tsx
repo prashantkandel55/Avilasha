@@ -38,7 +38,7 @@ const AssetAllocation: React.FC<AssetAllocationProps> = ({ wallet }) => {
         name: t.name || t.symbol,
         symbol: t.symbol,
         percentage: Math.round((t.valueUSD / totalValue) * 100),
-        color: 'bg-crypto-other' // You may map symbol to color if desired
+        color: getColorForAsset(t.symbol)
       }))
     : [];
 
@@ -71,5 +71,28 @@ const AssetAllocation: React.FC<AssetAllocationProps> = ({ wallet }) => {
     </div>
   );
 };
+
+// Helper function to get a color for an asset based on its symbol
+function getColorForAsset(symbol: string): string {
+  const colorMap: Record<string, string> = {
+    'BTC': 'bg-crypto-bitcoin',
+    'ETH': 'bg-crypto-ethereum',
+    'SOL': 'bg-crypto-solana',
+    'BNB': 'bg-crypto-bnb',
+    'USDT': 'bg-green-500',
+    'USDC': 'bg-blue-500',
+    'ADA': 'bg-blue-700',
+    'DOT': 'bg-pink-500',
+    'AVAX': 'bg-red-500',
+    'MATIC': 'bg-purple-500',
+    'LINK': 'bg-blue-400',
+    'UNI': 'bg-pink-400',
+    'AAVE': 'bg-purple-400',
+    'SNX': 'bg-indigo-500',
+    'COMP': 'bg-teal-500',
+  };
+  
+  return colorMap[symbol] || 'bg-crypto-other';
+}
 
 export default AssetAllocation;

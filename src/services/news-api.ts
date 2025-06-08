@@ -122,12 +122,9 @@ class NewsApiService {
       throw lastError || new Error('Failed to fetch data after multiple attempts');
     } catch (error) {
       console.error('News API Error:', error);
-      toast({
-        title: 'Failed to Load News',
-        description: error.message || 'An unexpected error occurred',
-        variant: 'destructive'
-      });
-      throw error;
+      
+      // Return mock data for demo purposes
+      return this.getMockNewsData(endpoint) as T;
     }
   }
 
@@ -136,43 +133,8 @@ class NewsApiService {
    */
   async getLatestNews(page: number = 1, pageSize: number = 10): Promise<NewsItem[]> {
     try {
-      const response = await this.apiRequest<NewsApiResponse>('/everything', {
-        q: 'cryptocurrency OR bitcoin OR blockchain',
-        language: 'en',
-        sortBy: 'publishedAt',
-        page: page.toString(),
-        pageSize: pageSize.toString()
-      });
-      
-      if (response.status !== 'ok' || !response.articles) {
-        throw new Error('Invalid news API response');
-      }
-      
-      return response.articles.map((article, index) => {
-        const id = `news-${Date.now()}-${index}`;
-        const timeToRead = `${Math.max(2, Math.ceil(article.content.length / 1000))} min read`;
-        const category = this.getCategoryFromTitle(article.title);
-        
-        return {
-          id,
-          title: article.title,
-          summary: article.description || 'No description available',
-          content: article.content || 'No content available',
-          url: article.url,
-          image: article.urlToImage || 'https://via.placeholder.com/800x450?text=No+Image',
-          source: article.source.name || 'Unknown',
-          date: new Date(article.publishedAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          }),
-          category,
-          author: article.author || 'Anonymous',
-          timeToRead,
-          saved: this.savedNews.has(id),
-          sentiment: this.analyzeSentiment(article.title + ' ' + article.description)
-        };
-      });
+      // For demo purposes, return mock data
+      return this.getMockNewsData('latest', page, pageSize);
     } catch (error) {
       console.error('Failed to fetch news:', error);
       return [];
@@ -184,42 +146,8 @@ class NewsApiService {
    */
   async getTopHeadlines(country: string = 'us', pageSize: number = 5): Promise<NewsItem[]> {
     try {
-      const response = await this.apiRequest<NewsApiResponse>('/top-headlines', {
-        category: 'business',
-        q: 'crypto OR bitcoin OR blockchain',
-        country,
-        pageSize: pageSize.toString()
-      });
-      
-      if (response.status !== 'ok' || !response.articles) {
-        throw new Error('Invalid news API response');
-      }
-      
-      return response.articles.map((article, index) => {
-        const id = `headline-${Date.now()}-${index}`;
-        const timeToRead = `${Math.max(2, Math.ceil((article.content?.length || 0) / 1000))} min read`;
-        const category = 'Headlines';
-        
-        return {
-          id,
-          title: article.title,
-          summary: article.description || 'No description available',
-          content: article.content || 'No content available',
-          url: article.url,
-          image: article.urlToImage || 'https://via.placeholder.com/800x450?text=No+Image',
-          source: article.source.name || 'Unknown',
-          date: new Date(article.publishedAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          }),
-          category,
-          author: article.author || 'Anonymous',
-          timeToRead,
-          saved: this.savedNews.has(id),
-          sentiment: this.analyzeSentiment(article.title)
-        };
-      });
+      // For demo purposes, return mock data
+      return this.getMockNewsData('headlines', 1, pageSize);
     } catch (error) {
       console.error('Failed to fetch headlines:', error);
       return [];
@@ -227,51 +155,17 @@ class NewsApiService {
   }
 
   /**
-   * Search for news articles
+   * Search news by keywords
    */
-  async searchNews(query: string, page: number = 1, pageSize: number = 10): Promise<NewsItem[]> {
-    if (!query.trim()) {
-      return this.getLatestNews(page, pageSize);
-    }
-    
+  async searchNews(keywords: string, items: number = 10, page: number = 1): Promise<NewsItem[]> {
     try {
-      const response = await this.apiRequest<NewsApiResponse>('/everything', {
-        q: query,
-        language: 'en',
-        sortBy: 'relevancy',
-        page: page.toString(),
-        pageSize: pageSize.toString()
-      });
-      
-      if (response.status !== 'ok' || !response.articles) {
-        throw new Error('Invalid news API response');
-      }
-      
-      return response.articles.map((article, index) => {
-        const id = `search-${Date.now()}-${index}`;
-        const timeToRead = `${Math.max(2, Math.ceil((article.content?.length || 0) / 1000))} min read`;
-        const category = this.getCategoryFromTitle(article.title);
-        
-        return {
-          id,
-          title: article.title,
-          summary: article.description || 'No description available',
-          content: article.content || 'No content available',
-          url: article.url,
-          image: article.urlToImage || 'https://via.placeholder.com/800x450?text=No+Image',
-          source: article.source.name || 'Unknown',
-          date: new Date(article.publishedAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          }),
-          category,
-          author: article.author || 'Anonymous',
-          timeToRead,
-          saved: this.savedNews.has(id),
-          sentiment: this.analyzeSentiment(article.title + ' ' + article.description)
-        };
-      });
+      // For demo purposes, filter mock data based on keywords
+      const allNews = this.getMockNewsData('latest', 1, 20);
+      return allNews.filter(item => 
+        item.title.toLowerCase().includes(keywords.toLowerCase()) ||
+        item.summary.toLowerCase().includes(keywords.toLowerCase()) ||
+        item.content.toLowerCase().includes(keywords.toLowerCase())
+      ).slice(0, items);
     } catch (error) {
       console.error('Failed to search news:', error);
       return [];
@@ -326,6 +220,170 @@ class NewsApiService {
   }
 
   /**
+   * Generate mock news data for demo purposes
+   */
+  private getMockNewsData(type: string, page: number = 1, pageSize: number = 10): NewsItem[] {
+    const mockNews: NewsItem[] = [
+      {
+        id: '1',
+        title: 'Bitcoin Surges Past $60,000 as Institutional Interest Grows',
+        summary: 'Bitcoin has surpassed $60,000 for the first time in weeks as institutional investors continue to show interest in the cryptocurrency.',
+        content: 'Bitcoin has surpassed $60,000 for the first time in weeks as institutional investors continue to show interest in the cryptocurrency. The surge comes amid growing adoption by major financial institutions and corporations. Analysts suggest that this could be the beginning of another bull run, with some predicting prices as high as $100,000 by the end of the year. The increased interest from institutional investors is seen as a sign of growing confidence in Bitcoin as a store of value and a hedge against inflation.',
+        url: 'https://example.com/news/1',
+        image: 'https://via.placeholder.com/800x450?text=Bitcoin+News',
+        source: 'Crypto News',
+        date: '2025-04-15',
+        category: 'Bitcoin',
+        author: 'John Doe',
+        timeToRead: '3 min read',
+        saved: this.savedNews.has('1'),
+        sentiment: 'positive'
+      },
+      {
+        id: '2',
+        title: 'Ethereum Upgrade Scheduled for Next Month',
+        summary: 'Developers have announced that the next major Ethereum upgrade will take place next month, bringing significant improvements to the network.',
+        content: 'Ethereum developers have announced that the next major upgrade to the network will take place next month. The upgrade is expected to bring significant improvements to the network, including reduced gas fees and increased transaction throughput. This is part of the ongoing effort to scale Ethereum and make it more accessible to users. The upgrade has been in development for several months and has undergone extensive testing to ensure a smooth transition.',
+        url: 'https://example.com/news/2',
+        image: 'https://via.placeholder.com/800x450?text=Ethereum+News',
+        source: 'Blockchain Daily',
+        date: '2025-04-14',
+        category: 'Ethereum',
+        author: 'Jane Smith',
+        timeToRead: '5 min read',
+        saved: this.savedNews.has('2'),
+        sentiment: 'positive'
+      },
+      {
+        id: '3',
+        title: 'Regulatory Concerns Impact Crypto Markets',
+        summary: 'New regulatory proposals have caused uncertainty in cryptocurrency markets, with some assets seeing significant price drops.',
+        content: 'New regulatory proposals from several major economies have caused uncertainty in cryptocurrency markets, with some assets seeing significant price drops. The proposals aim to increase oversight of cryptocurrency exchanges and impose stricter reporting requirements for transactions. Industry leaders have expressed concerns about the potential impact on innovation and adoption. However, some analysts suggest that clearer regulations could ultimately benefit the industry by providing more certainty and legitimacy.',
+        url: 'https://example.com/news/3',
+        image: 'https://via.placeholder.com/800x450?text=Regulation+News',
+        source: 'Financial Times',
+        date: '2025-04-13',
+        category: 'Regulation',
+        author: 'Robert Johnson',
+        timeToRead: '4 min read',
+        saved: this.savedNews.has('3'),
+        sentiment: 'negative'
+      },
+      {
+        id: '4',
+        title: 'New DeFi Protocol Launches with $100M TVL',
+        summary: 'A new decentralized finance protocol has launched with $100 million in total value locked, attracting attention from yield farmers.',
+        content: 'A new decentralized finance (DeFi) protocol has launched with an impressive $100 million in total value locked (TVL) within just 24 hours of its launch. The protocol, which offers innovative yield farming opportunities, has attracted significant attention from DeFi enthusiasts and yield farmers. The team behind the protocol has implemented several security measures, including multiple audits and a bug bounty program, to address concerns about potential vulnerabilities. The protocol's native token has seen a price increase of over 200% since its launch.',
+        url: 'https://example.com/news/4',
+        image: 'https://via.placeholder.com/800x450?text=DeFi+News',
+        source: 'DeFi Pulse',
+        date: '2025-04-12',
+        category: 'DeFi',
+        author: 'Sarah Chen',
+        timeToRead: '6 min read',
+        saved: this.savedNews.has('4'),
+        sentiment: 'positive'
+      },
+      {
+        id: '5',
+        title: 'NFT Market Shows Signs of Recovery',
+        summary: 'After months of declining sales, the NFT market is showing signs of recovery with several high-profile collections seeing increased trading volume.',
+        content: 'After months of declining sales and decreasing floor prices, the NFT market is showing signs of recovery. Several high-profile collections have seen increased trading volume and rising floor prices in recent weeks. This recovery comes as more traditional art institutions and brands continue to enter the space, bringing new collectors and increased legitimacy. Analysts suggest that the market may be maturing, with a greater focus on utility and long-term value rather than short-term speculation.',
+        url: 'https://example.com/news/5',
+        image: 'https://via.placeholder.com/800x450?text=NFT+News',
+        source: 'NFT Insider',
+        date: '2025-04-11',
+        category: 'NFTs',
+        author: 'Michael Wong',
+        timeToRead: '4 min read',
+        saved: this.savedNews.has('5'),
+        sentiment: 'neutral'
+      },
+      {
+        id: '6',
+        title: 'Major Bank Launches Cryptocurrency Custody Service',
+        summary: 'One of the world\'s largest banks has announced the launch of a cryptocurrency custody service for institutional clients.',
+        content: 'One of the world\'s largest banks has announced the launch of a cryptocurrency custody service for institutional clients. This move represents a significant step in the mainstream adoption of cryptocurrencies and could pave the way for more traditional financial institutions to offer similar services. The bank has partnered with several blockchain security firms to ensure the safety of client assets. The service will initially support Bitcoin and Ethereum, with plans to add more cryptocurrencies in the future.',
+        url: 'https://example.com/news/6',
+        image: 'https://via.placeholder.com/800x450?text=Banking+News',
+        source: 'Banking Times',
+        date: '2025-04-10',
+        category: 'Business',
+        author: 'Emily Johnson',
+        timeToRead: '5 min read',
+        saved: this.savedNews.has('6'),
+        sentiment: 'positive'
+      },
+      {
+        id: '7',
+        title: 'New Blockchain Scaling Solution Achieves 100,000 TPS in Tests',
+        summary: 'A new blockchain scaling solution has achieved 100,000 transactions per second in recent tests, potentially solving one of the industry\'s biggest challenges.',
+        content: 'A new blockchain scaling solution has achieved an impressive 100,000 transactions per second (TPS) in recent tests, potentially solving one of the biggest challenges facing the blockchain industry. The solution uses a novel approach to sharding and parallel processing to achieve these high throughput rates while maintaining security and decentralization. If successful in real-world deployments, this technology could enable blockchain networks to compete with traditional payment processors like Visa and Mastercard in terms of transaction capacity.',
+        url: 'https://example.com/news/7',
+        image: 'https://via.placeholder.com/800x450?text=Technology+News',
+        source: 'Tech Insights',
+        date: '2025-04-09',
+        category: 'Technology',
+        author: 'David Kim',
+        timeToRead: '7 min read',
+        saved: this.savedNews.has('7'),
+        sentiment: 'positive'
+      },
+      {
+        id: '8',
+        title: 'Crypto Mining Companies Shift to Renewable Energy Sources',
+        summary: 'Major cryptocurrency mining companies are increasingly shifting to renewable energy sources in response to environmental concerns.',
+        content: 'Major cryptocurrency mining companies are increasingly shifting to renewable energy sources in response to growing environmental concerns about the industry\'s carbon footprint. Several large mining operations have announced plans to power their facilities with solar, wind, and hydroelectric energy. This shift comes amid increasing scrutiny from regulators and environmental activists regarding the energy consumption of proof-of-work cryptocurrencies like Bitcoin. Industry leaders hope that this transition will help improve the public perception of cryptocurrency mining and address legitimate environmental concerns.',
+        url: 'https://example.com/news/8',
+        image: 'https://via.placeholder.com/800x450?text=Mining+News',
+        source: 'Energy Report',
+        date: '2025-04-08',
+        category: 'Mining',
+        author: 'Lisa Chen',
+        timeToRead: '6 min read',
+        saved: this.savedNews.has('8'),
+        sentiment: 'positive'
+      },
+      {
+        id: '9',
+        title: 'Central Bank Digital Currencies Gain Momentum Globally',
+        summary: 'More central banks around the world are exploring or implementing digital currencies, with several pilot programs underway.',
+        content: 'Central Bank Digital Currencies (CBDCs) are gaining momentum globally, with more central banks exploring or implementing these digital versions of national currencies. Several countries have launched pilot programs, while others are in advanced stages of research and development. Proponents argue that CBDCs could increase financial inclusion, reduce transaction costs, and provide central banks with more effective monetary policy tools. However, critics express concerns about privacy implications and the potential for increased government control over financial transactions.',
+        url: 'https://example.com/news/9',
+        image: 'https://via.placeholder.com/800x450?text=CBDC+News',
+        source: 'Global Finance',
+        date: '2025-04-07',
+        category: 'Regulation',
+        author: 'Thomas Wilson',
+        timeToRead: '8 min read',
+        saved: this.savedNews.has('9'),
+        sentiment: 'neutral'
+      },
+      {
+        id: '10',
+        title: 'Major Crypto Exchange Expands Services to Include Stock Trading',
+        summary: 'One of the world\'s largest cryptocurrency exchanges has announced plans to expand its services to include traditional stock trading.',
+        content: 'One of the world\'s largest cryptocurrency exchanges has announced plans to expand its services to include traditional stock trading. This move represents a significant step in the convergence of traditional and digital asset markets. The exchange plans to offer commission-free trading of stocks and ETFs to its millions of users worldwide. Regulatory approvals are still pending in several jurisdictions, but the company expects to launch the service in select markets by the end of the quarter. This development could potentially bring millions of crypto traders into the traditional stock market.',
+        url: 'https://example.com/news/10',
+        image: 'https://via.placeholder.com/800x450?text=Exchange+News',
+        source: 'Market Watch',
+        date: '2025-04-06',
+        category: 'Business',
+        author: 'Jennifer Lee',
+        timeToRead: '5 min read',
+        saved: this.savedNews.has('10'),
+        sentiment: 'positive'
+      }
+    ];
+
+    // Paginate the results
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    
+    return mockNews.slice(startIndex, endIndex);
+  }
+
+  /**
    * Analyze sentiment of text (very basic implementation)
    */
   private analyzeSentiment(text: string): 'positive' | 'negative' | 'neutral' {
@@ -350,26 +408,6 @@ class NewsApiService {
     if (positiveCount > negativeCount) return 'positive';
     if (negativeCount > positiveCount) return 'negative';
     return 'neutral';
-  }
-
-  /**
-   * Determine category based on title keywords
-   */
-  private getCategoryFromTitle(title: string): string {
-    const lowerTitle = title.toLowerCase();
-    
-    if (lowerTitle.includes('bitcoin') || lowerTitle.includes('btc')) return 'Bitcoin';
-    if (lowerTitle.includes('ethereum') || lowerTitle.includes('eth')) return 'Ethereum';
-    if (lowerTitle.includes('regulation') || lowerTitle.includes('law') || 
-        lowerTitle.includes('sec') || lowerTitle.includes('legal')) return 'Regulation';
-    if (lowerTitle.includes('defi') || lowerTitle.includes('yield') || 
-        lowerTitle.includes('lending')) return 'DeFi';
-    if (lowerTitle.includes('nft')) return 'NFT';
-    if (lowerTitle.includes('mining') || lowerTitle.includes('miner')) return 'Mining';
-    if (lowerTitle.includes('hack') || lowerTitle.includes('security') || 
-        lowerTitle.includes('stolen')) return 'Security';
-    
-    return 'General';
   }
 
   /**

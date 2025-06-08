@@ -14,6 +14,9 @@ import { WalletConnectModal } from '@/components/WalletConnectModal';
 import { getSelectedWallet, subscribeSelectedWallet } from '@/services/selectedWallet';
 import AvilashaLogo from '/Avilasha.svg';
 import CryptoNewsWidget from '../components/CryptoNewsWidget';
+import CoolFeatures from '../components/CoolFeatures';
+import ThemeSwitcher from '../components/ThemeSwitcher';
+import { motion } from 'framer-motion';
 
 const Dashboard = () => {
   const [wallets, setWallets] = useState([]);
@@ -68,7 +71,12 @@ const Dashboard = () => {
 
   if (!wallets.length) {
     return (
-      <div className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg animate-fade-in text-center">
+      <motion.div 
+        className="glassmorphism glassmorphism-hover p-8 rounded-2xl shadow-lg text-center"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <h2 className="text-2xl font-bold mb-2">No Wallet Connected</h2>
         <p className="mb-4">Connect a wallet to view your dashboard.</p>
         <button
@@ -86,36 +94,78 @@ const Dashboard = () => {
             })();
           }} />
         )}
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="relative w-full animate-fade-in">
+    <div className="relative w-full">
+      <div className="absolute top-0 right-0 flex items-center gap-2">
+        <ThemeSwitcher />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setNotificationModalOpen(true)}
+          className="rounded-full h-9 w-9 hover:bg-primary/10"
+        >
+          <Bell className="h-5 w-5" />
+        </Button>
+      </div>
+
       {/* Avilasha Logo, Greeting, and Animated Header */}
-      <div className="flex items-center gap-4 mb-6 animate-float">
-        <img src={AvilashaLogo} alt="Avilasha Logo" className="w-14 h-14 rounded-full shadow-neon bg-black/40 p-1" style={{ filter: 'drop-shadow(0 0 12px #00ffb3)' }} />
+      <motion.div 
+        className="flex items-center gap-4 mb-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="relative">
+          <img 
+            src={AvilashaLogo} 
+            alt="Avilasha Logo" 
+            className="w-14 h-14 rounded-full shadow-neon bg-black/40 p-1 float-animation" 
+            style={{ filter: 'drop-shadow(0 0 12px #00ffb3)' }} 
+          />
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background pulse-border-animation"></div>
+        </div>
         <div>
-          <h1 className="text-3xl font-extrabold text-primary drop-shadow-glow tracking-tight">Welcome to Avilasha</h1>
+          <h1 className="text-3xl font-extrabold text-gradient bg-gradient-to-r from-primary to-purple-600 tracking-tight">Welcome to Avilasha</h1>
           <span className="text-secondary-foreground text-base">Your smart crypto dashboard</span>
         </div>
-      </div>
+      </motion.div>
+
       {/* --- Enhanced Dashboard Grid --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
         <PortfolioStatsRow />
-      </div>
+      </motion.div>
+
       {/* --- Main Widgets Row --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="col-span-2 flex flex-col gap-6">
-          <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 transition-all hover:shadow-xl">
+        <motion.div 
+          className="col-span-2 flex flex-col gap-6"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <div className="rounded-xl bg-card shadow-lg p-6 transition-all hover:shadow-xl">
             <PortfolioChart wallet={selectedWallet} />
           </div>
-          <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 transition-all hover:shadow-xl">
+          <div className="rounded-xl bg-card shadow-lg p-6 transition-all hover:shadow-xl">
             <AssetAllocation wallet={selectedWallet} />
           </div>
-        </div>
-        <div className="flex flex-col gap-6">
-          <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 flex flex-col items-center transition-all hover:shadow-xl">
+        </motion.div>
+        <motion.div 
+          className="flex flex-col gap-6"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <div className="rounded-xl bg-card shadow-lg p-6 flex flex-col items-center transition-all hover:shadow-xl">
             <h3 className="font-bold mb-2">Top Assets</h3>
             {loadingWidgets ? (
               <div className="w-full animate-pulse flex flex-col gap-2">
@@ -131,15 +181,23 @@ const Dashboard = () => {
               </ul>
             )}
           </div>
-          <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 flex flex-col items-center transition-all hover:shadow-xl">
+          <div className="rounded-xl bg-card shadow-lg p-6 flex flex-col items-center transition-all hover:shadow-xl">
             <ProfilePoints />
           </div>
-        </div>
+          <CoolFeatures />
+        </motion.div>
       </div>
+
       {/* --- News Feed Widget Row --- */}
-      <div className="rounded-xl bg-white/80 dark:bg-black/60 shadow-lg p-6 transition-all hover:shadow-xl mb-8">
+      <motion.div 
+        className="rounded-xl bg-card shadow-lg p-6 transition-all hover:shadow-xl mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
         <CryptoNewsWidget />
-      </div>
+      </motion.div>
+
       {/* --- Notification Modal --- */}
       <NotificationSettingsModal open={notificationModalOpen} onClose={() => setNotificationModalOpen(false)} />
     </div>

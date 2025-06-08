@@ -1,0 +1,141 @@
+/* Advanced Animations for Avilasha App */
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(var(--primary), 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(var(--primary), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--primary), 0); }
+}
+
+@keyframes slide-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes fade-in-slow {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes scale-in {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes gradient-x {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(var(--primary), 0.5); }
+  50% { box-shadow: 0 0 20px rgba(var(--primary), 0.8); }
+  100% { box-shadow: 0 0 5px rgba(var(--primary), 0.5); }
+}
+
+/* Apply animations with classes */
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+.pulse-border-animation {
+  animation: pulse-border 2s infinite;
+}
+
+.slide-up-animation {
+  animation: slide-up 0.5s ease-out;
+}
+
+.fade-in-animation {
+  animation: fade-in 0.5s ease-out;
+}
+
+.fade-in-slow {
+  animation: fade-in-slow 1s ease-out;
+}
+
+.scale-in-animation {
+  animation: scale-in 0.3s ease-out;
+}
+
+.gradient-animation {
+  background-size: 200% 200%;
+  animation: gradient-x 15s ease infinite;
+}
+
+.shimmer-animation {
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.rotate-animation {
+  animation: rotate 10s linear infinite;
+}
+
+.bounce-animation {
+  animation: bounce 2s ease infinite;
+}
+
+.glow-animation {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Shadow effects */
+.shadow-neon {
+  box-shadow: 0 0 10px rgba(var(--primary), 0.5), 
+              0 0 20px rgba(var(--primary), 0.3), 
+              0 0 30px rgba(var(--primary), 0.1);
+}
+
+.shadow-hover {
+  transition: all 0.3s ease;
+}
+
+.shadow-hover:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+/* Text effects */
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(to right, var(--primary), #6366f1);
+}
+
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 2px rgba(var(--primary), 0.5));
+}

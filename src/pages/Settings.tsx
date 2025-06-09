@@ -43,6 +43,42 @@ const Settings = () => {
     fetchWallets();
   }, []);
 
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setProfile({ ...profile, [id]: value });
+  };
+
+  const handleSaveProfile = async () => {
+    const user = await AuthService.getCurrentUser();
+    if (!user) {
+      toast({ title: "Not logged in", description: "Please log in to update your profile", variant: "destructive" });
+      return;
+    }
+    const { error } = await AuthService.updateProfile(user.id, {
+      full_name: profile.fullName,
+      phone: profile.phone
+    });
+    if (error) {
+      toast({ title: "Profile Update Failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profile Updated", description: "Your profile information has been saved" });
+    }
+  };
+
+  const handleThemeChange = (newTheme: 'dark' | 'light' | 'system') => {
+    setTheme(newTheme);
+    if (newTheme === 'system') {
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setDarkMode(systemPrefersDark);
+    } else {
+      setDarkMode(newTheme === 'dark');
+    }
+    toast({
+      title: "Theme Changed",
+      description: `Theme set to ${newTheme}`,
+    });
+  };
+
   if (loading) {
     return <div className="text-center p-10">Loading settings...</div>;
   }
@@ -216,43 +252,6 @@ const Settings = () => {
       )}
     </div>
   );
-
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setProfile({ ...profile, [id]: value });
-  };
-
-  const handleSaveProfile = async () => {
-    const user = await AuthService.getCurrentUser();
-    if (!user) {
-      toast({ title: "Not logged in", description: "Please log in to update your profile", variant: "destructive" });
-      return;
-    }
-    const { error } = await AuthService.updateProfile(user.id, {
-      full_name: profile.fullName,
-      phone: profile.phone
-    });
-    if (error) {
-      toast({ title: "Profile Update Failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Profile Updated", description: "Your profile information has been saved" });
-    }
-  };
-
-  const handleThemeChange = (newTheme: 'dark' | 'light' | 'system') => {
-    setTheme(newTheme);
-    if (newTheme === 'system') {
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setDarkMode(systemPrefersDark);
-    } else {
-      setDarkMode(newTheme === 'dark');
-    }
-    toast({
-      title: "Theme Changed",
-      description: `Theme set to ${newTheme}`,
-    });
-  };
-
 };
 
 export default Settings;

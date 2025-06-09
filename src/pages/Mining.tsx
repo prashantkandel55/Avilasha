@@ -63,8 +63,8 @@ interface Achievement {
 }
 
 const Mining: React.FC = () => {
-  // Mining hardware options
-  const [hardware, setHardware] = useState<MiningHardware[]>([
+  // Default hardware configurations with icons
+  const getDefaultHardware = (): MiningHardware[] => [
     {
       id: 'cpu-basic',
       name: 'Basic CPU Miner',
@@ -101,29 +101,10 @@ const Mining: React.FC = () => {
       maxLevel: 15,
       icon: <Chip />
     }
-  ]);
+  ];
 
-  // Mining stats
-  const [stats, setStats] = useState<MiningStats>({
-    totalMined: 0,
-    hashrate: 0.5, // Start with basic CPU
-    efficiency: 0.0077,
-    power: 65,
-    uptime: 0,
-    lastPayout: 0,
-    startTime: Date.now()
-  });
-
-  // Mining state
-  const [isMining, setIsMining] = useState(false);
-  const [balance, setBalance] = useState(100); // Start with 100 AVI tokens
-  const [miningProgress, setMiningProgress] = useState(0);
-  const [miningInterval, setMiningInterval] = useState<NodeJS.Timeout | null>(null);
-  const [activeHardware, setActiveHardware] = useState<string>('cpu-basic');
-  const [showConfetti, setShowConfetti] = useState(false);
-
-  // Upgrades
-  const [upgrades, setUpgrades] = useState<Upgrade[]>([
+  // Default upgrades with icons
+  const getDefaultUpgrades = (): Upgrade[] => [
     {
       id: 'cooling',
       name: 'Advanced Cooling',
@@ -178,10 +159,10 @@ const Mining: React.FC = () => {
       applied: false,
       icon: <Fan />
     }
-  ]);
+  ];
 
-  // Achievements
-  const [achievements, setAchievements] = useState<Achievement[]>([
+  // Default achievements with icons
+  const getDefaultAchievements = (): Achievement[] => [
     {
       id: 'first-coin',
       name: 'First Coin',
@@ -232,7 +213,35 @@ const Mining: React.FC = () => {
       reward: 150,
       icon: <Zap />
     }
-  ]);
+  ];
+
+  // Mining hardware options
+  const [hardware, setHardware] = useState<MiningHardware[]>(getDefaultHardware());
+
+  // Mining stats
+  const [stats, setStats] = useState<MiningStats>({
+    totalMined: 0,
+    hashrate: 0.5, // Start with basic CPU
+    efficiency: 0.0077,
+    power: 65,
+    uptime: 0,
+    lastPayout: 0,
+    startTime: Date.now()
+  });
+
+  // Mining state
+  const [isMining, setIsMining] = useState(false);
+  const [balance, setBalance] = useState(100); // Start with 100 AVI tokens
+  const [miningProgress, setMiningProgress] = useState(0);
+  const [miningInterval, setMiningInterval] = useState<NodeJS.Timeout | null>(null);
+  const [activeHardware, setActiveHardware] = useState<string>('cpu-basic');
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  // Upgrades
+  const [upgrades, setUpgrades] = useState<Upgrade[]>(getDefaultUpgrades());
+
+  // Achievements
+  const [achievements, setAchievements] = useState<Achievement[]>(getDefaultAchievements());
 
   // Load saved data from localStorage
   useEffect(() => {
@@ -240,15 +249,59 @@ const Mining: React.FC = () => {
     if (savedData) {
       try {
         const data = JSON.parse(savedData);
-        setHardware(data.hardware || hardware);
-        setStats({
-          ...data.stats,
-          startTime: data.stats?.startTime || Date.now()
-        });
-        setBalance(data.balance || balance);
-        setUpgrades(data.upgrades || upgrades);
-        setAchievements(data.achievements || achievements);
-        setActiveHardware(data.activeHardware || activeHardware);
+        
+        // Restore hardware with icons
+        if (data.hardware) {
+          const defaultHardware = getDefaultHardware();
+          const restoredHardware = data.hardware.map((savedItem: any) => {
+            const defaultItem = defaultHardware.find(h => h.id === savedItem.id);
+            return {
+              ...savedItem,
+              icon: defaultItem?.icon || <Cpu />
+            };
+          });
+          setHardware(restoredHardware);
+        }
+        
+        // Restore upgrades with icons
+        if (data.upgrades) {
+          const defaultUpgrades = getDefaultUpgrades();
+          const restoredUpgrades = data.upgrades.map((savedItem: any) => {
+            const defaultItem = defaultUpgrades.find(u => u.id === savedItem.id);
+            return {
+              ...savedItem,
+              icon: defaultItem?.icon || <Cog />
+            };
+          });
+          setUpgrades(restoredUpgrades);
+        }
+        
+        // Restore achievements with icons
+        if (data.achievements) {
+          const defaultAchievements = getDefaultAchievements();
+          const restoredAchievements = data.achievements.map((savedItem: any) => {
+            const defaultItem = defaultAchievements.find(a => a.id === savedItem.id);
+            return {
+              ...savedItem,
+              icon: defaultItem?.icon || <Trophy />
+            };
+          });
+          setAchievements(restoredAchievements);
+        }
+        
+        // Restore other data
+        if (data.stats) {
+          setStats({
+            ...data.stats,
+            startTime: data.stats?.startTime || Date.now()
+          });
+        }
+        if (data.balance !== undefined) {
+          setBalance(data.balance);
+        }
+        if (data.activeHardware) {
+          setActiveHardware(data.activeHardware);
+        }
       } catch (error) {
         console.error('Failed to load mining data:', error);
       }
@@ -258,14 +311,23 @@ const Mining: React.FC = () => {
   // Save data to localStorage
   useEffect(() => {
     const saveData = () => {
-      localStorage.setItem('avilasha_mining_data', JSON.stringify({
-        hardware,
-        stats,
-        balance,
-        upgrades,
-        achievements,
-        activeHardware
-      }));
+      try {
+        // Remove icons before saving to avoid circular references
+        const hardwareToSave = hardware.map(({ icon, ...rest }) => rest);
+        const upgradesToSave = upgrades.map(({ icon, ...rest }) => rest);
+        const achievementsToSave = achievements.map(({ icon, ...rest }) => rest);
+        
+        localStorage.setItem('avilasha_mining_data', JSON.stringify({
+          hardware: hardwareToSave,
+          stats,
+          balance,
+          upgrades: upgradesToSave,
+          achievements: achievementsToSave,
+          activeHardware
+        }));
+      } catch (error) {
+        console.error('Failed to save mining data:', error);
+      }
     };
 
     // Save every 30 seconds and on unmount

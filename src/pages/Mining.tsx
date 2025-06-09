@@ -653,7 +653,7 @@ const Mining: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <span className={`p-1.5 rounded-full ${isActive ? 'bg-primary text-white' : 'bg-muted'}`}>
+                <span className={`p-1.5 rounded-full ${isActive ? 'bg-primary text-black' : 'bg-muted'}`}>
                   {item.icon}
                 </span>
                 {item.name}
@@ -703,6 +703,7 @@ const Mining: React.FC = () => {
               onClick={() => purchaseHardware(item.id)} 
               disabled={balance < item.price}
               className="w-full"
+              variant="luxury"
             >
               Buy for {item.price} AVI
             </Button>
@@ -723,6 +724,7 @@ const Mining: React.FC = () => {
                   onClick={() => upgradeHardware(item.id)} 
                   disabled={balance < upgradeCost}
                   className={`flex-1 ${isActive ? 'w-full' : ''}`}
+                  variant="luxury"
                 >
                   Upgrade ({upgradeCost} AVI)
                 </Button>
@@ -737,23 +739,23 @@ const Mining: React.FC = () => {
   return (
     <div className="animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-1 cyberpunk-text">Mining Center</h1>
+        <h1 className="text-3xl font-bold mb-1 gold-gradient-text">Mining Center</h1>
         <p className="text-muted-foreground">Mine AVI tokens with your hardware</p>
       </div>
       
       {/* Mining Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Balance Card */}
-        <Card className="md:col-span-2 gradient-bg">
+        <Card className="md:col-span-2 luxury-gradient-bg">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
-              <Coins className="h-5 w-5 text-yellow-500" />
+              <Coins className="h-5 w-5 text-primary" />
               AVI Balance
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-2">
-              <div className="text-4xl font-bold neon-text">{formatNumber(balance, 4)}</div>
+              <div className="text-4xl font-bold luxury-text">{formatNumber(balance, 4)}</div>
               <div className="text-lg text-muted-foreground mb-1">AVI</div>
             </div>
             
@@ -784,6 +786,7 @@ const Mining: React.FC = () => {
                   <Button 
                     onClick={startMining} 
                     className="flex-1 bg-green-600 hover:bg-green-700"
+                    variant="luxury"
                   >
                     Start Mining
                   </Button>
@@ -824,7 +827,7 @@ const Mining: React.FC = () => {
           <CardFooter>
             <div className="w-full">
               <div className="text-xs text-muted-foreground mb-1">Total Mined</div>
-              <div className="text-xl font-bold">{formatNumber(stats.totalMined, 4)} AVI</div>
+              <div className="text-xl font-bold gold-gradient-text">{formatNumber(stats.totalMined, 4)} AVI</div>
             </div>
           </CardFooter>
         </Card>
@@ -887,6 +890,7 @@ const Mining: React.FC = () => {
                       onClick={() => purchaseUpgrade(upgrade.id)} 
                       disabled={balance < upgrade.cost}
                       className="w-full"
+                      variant="luxury"
                     >
                       Purchase for {upgrade.cost} AVI
                     </Button>

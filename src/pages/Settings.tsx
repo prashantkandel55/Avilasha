@@ -20,29 +20,6 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const user = await AuthService.getCurrentUser();
-      if (user) {
-        const { profile: dbProfile } = await AuthService.getProfile(user.id);
-        setProfile({
-          fullName: dbProfile?.full_name || '',
-          email: dbProfile?.email || user.email || '',
-          phone: dbProfile?.phone || ''
-        });
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    async function fetchWallets() {
-      const allWallets = await walletService.getAllWallets?.() || [];
-      setWallets(allWallets);
-      setLoading(false);
-    }
-    fetchWallets();
-  }, []);
-
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setProfile({ ...profile, [id]: value });
@@ -78,6 +55,29 @@ const Settings = () => {
       description: `Theme set to ${newTheme}`,
     });
   };
+
+  useEffect(() => {
+    (async () => {
+      const user = await AuthService.getCurrentUser();
+      if (user) {
+        const { profile: dbProfile } = await AuthService.getProfile(user.id);
+        setProfile({
+          fullName: dbProfile?.full_name || '',
+          email: dbProfile?.email || user.email || '',
+          phone: dbProfile?.phone || ''
+        });
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    async function fetchWallets() {
+      const allWallets = await walletService.getAllWallets?.() || [];
+      setWallets(allWallets);
+      setLoading(false);
+    }
+    fetchWallets();
+  }, []);
 
   if (loading) {
     return <div className="text-center p-10">Loading settings...</div>;
@@ -140,6 +140,7 @@ const Settings = () => {
                 <Button
                   onClick={handleSaveProfile}
                   className="bg-primary hover:bg-primary/90 mt-2"
+                  variant="luxury"
                 >
                   Save Changes
                 </Button>

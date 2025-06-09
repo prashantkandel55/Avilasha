@@ -251,7 +251,7 @@ const AvilashaAgent: React.FC = () => {
                     >
                       {message.sender === 'agent' && (
                         <Avatar className="h-8 w-8 mr-2 mt-1 border border-primary/30">
-                          <AvatarImage src="/Avilasha.svg" alt="Avilasha Agent" />
+                          <AvatarImage src="/Avilasha.svg\" alt="Avilasha Agent" />
                           <AvatarFallback className="bg-amber-600 text-white">AA</AvatarFallback>
                         </Avatar>
                       )}

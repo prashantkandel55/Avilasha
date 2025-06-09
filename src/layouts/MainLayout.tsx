@@ -3,7 +3,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import TrackWalletModal from '@/components/TrackWalletModal';
-import AvilashaAssistant from '@/components/AvilashaAssistant';
+import AvilashaAgent from '@/components/AvilashaAgent';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationProvider } from '@/context/NotificationContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -110,8 +110,8 @@ const MainLayout = () => {
           }}
         />
         
-        {/* Avilasha AI Assistant */}
-        <AvilashaAssistant />
+        {/* Avilasha AI Agent */}
+        <AvilashaAgent />
       </div>
     </NotificationProvider>
   );

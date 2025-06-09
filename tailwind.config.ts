@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -122,6 +121,15 @@ export default {
 					'0%': { transform: 'translateX(100%)' },
 					'100%': { transform: 'translateX(0)' }
 				},
+				'shimmer': {
+					'0%': { backgroundPosition: '-200% 0' },
+					'100%': { backgroundPosition: '200% 0' },
+				},
+				'gold-shimmer': {
+					'0%': { backgroundPosition: '0% 50%' },
+					'50%': { backgroundPosition: '100% 50%' },
+					'100%': { backgroundPosition: '0% 50%' },
+				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -130,6 +138,13 @@ export default {
 				'scale-in': 'scale-in 0.2s ease-out',
 				'slide-in-right': 'slide-in-right 0.3s ease-out',
 				'enter': 'fade-in 0.3s ease-out, scale-in 0.2s ease-out',
+				'shimmer': 'shimmer 2s infinite linear',
+				'gold-shimmer': 'gold-shimmer 3s ease infinite',
+			},
+			backgroundImage: {
+				'gold-gradient': 'linear-gradient(45deg, #d4af37, #f9f295, #d4af37)',
+				'luxury-gradient': 'linear-gradient(to right, hsl(36, 100%, 50%), hsl(36, 100%, 65%), hsl(36, 100%, 50%))',
+				'royal-gradient': 'linear-gradient(to right, hsl(263, 70%, 50%), hsl(263, 70%, 65%), hsl(263, 70%, 50%))'
 			}
 		}
 	},

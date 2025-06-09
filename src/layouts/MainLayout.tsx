@@ -57,7 +57,7 @@ const MainLayout = () => {
             const isLast = idx === pathnames.length - 1;
             return (
               <li key={to} className="flex items-center">
-                <span className="mx-2">/</span>
+                <span className="mx-2 text-primary/40">/</span>
                 {isLast ? (
                   <span className="text-muted-foreground">{value.charAt(0).toUpperCase() + value.slice(1)}</span>
                 ) : (

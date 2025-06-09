@@ -4,11 +4,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense, useState, useEffect } from "react";
-import MainLayout from "./layouts/MainLayout";
 import { toast } from "sonner";
 import { ThemeProvider } from "next-themes";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { setupServices } from '@/services/initialize-services';
+import MainLayout from "./layouts/MainLayout";
+import { SplashCursor } from "@/components/ui/splash-cursor";
 
 // Lazy load pages for better performance
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -25,7 +26,7 @@ const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
-const Mining = lazy(() => import('./pages/Mining')); // Add Mining page
+const Mining = lazy(() => import('./pages/Mining'));
 
 // Create query client with defaults
 const queryClient = new QueryClient({
@@ -66,6 +67,18 @@ const App = () => {
     setupServices();
   }, []);
 
+  // Show splash cursor effect
+  const [showSplashCursor, setShowSplashCursor] = useState(true);
+  
+  useEffect(() => {
+    // Show splash cursor for 8 seconds on initial load
+    const timer = setTimeout(() => {
+      setShowSplashCursor(false);
+    }, 8000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Error handling for Electron messages
   useEffect(() => {
     // Check if Electron bridge is available and has the error handler
@@ -94,11 +107,12 @@ const App = () => {
   }, []);
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="luxury" enableSystem>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          {showSplashCursor && <SplashCursor />}
           <HashRouter>
             <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
@@ -117,7 +131,7 @@ const App = () => {
                     <Route path="help" element={<HelpCenter />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="onboarding" element={<Onboarding />} />
-                    <Route path="mining" element={<Mining />} /> {/* Add Mining route */}
+                    <Route path="mining" element={<Mining />} />
                     <Route path="not-found" element={<NotFound />} />
                     <Route path="*" element={<Navigate to="/not-found\" replace />} />
                   </Route>

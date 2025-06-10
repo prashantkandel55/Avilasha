@@ -53,12 +53,12 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ className }) => {
           <span>Dark</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme('luxury')} className="flex items-center gap-2 cursor-pointer px-3 py-2 hover:bg-accent/20 rounded-md">
-          <Crown className="h-4 w-4 text-amber-500" />
-          <span className="text-amber-500 font-medium">Luxury</span>
+          <Crown className="h-4 w-4 text-green-500" />
+          <span className="text-green-500 font-medium">Luxury</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme('royal')} className="flex items-center gap-2 cursor-pointer px-3 py-2 hover:bg-accent/20 rounded-md">
-          <Gem className="h-4 w-4 text-purple-500" />
-          <span className="text-purple-500 font-medium">Royal</span>
+          <Gem className="h-4 w-4 text-green-500" />
+          <span className="text-green-500 font-medium">Royal</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme('system')} className="flex items-center gap-2 cursor-pointer px-3 py-2 hover:bg-accent/20 rounded-md">
           <Monitor className="h-4 w-4" />

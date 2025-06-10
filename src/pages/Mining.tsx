@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -62,159 +62,159 @@ interface Achievement {
   icon: React.ReactNode;
 }
 
+// Default hardware configurations with icons
+const getDefaultHardware = (): MiningHardware[] => [
+  {
+    id: 'cpu-basic',
+    name: 'Basic CPU Miner',
+    type: 'CPU',
+    hashrate: 0.5,
+    power: 65,
+    price: 0,
+    efficiency: 0.0077,
+    level: 1,
+    maxLevel: 5,
+    icon: <Cpu />
+  },
+  {
+    id: 'gpu-basic',
+    name: 'Basic GPU Rig',
+    type: 'GPU',
+    hashrate: 30,
+    power: 150,
+    price: 500,
+    efficiency: 0.2,
+    level: 0,
+    maxLevel: 10,
+    icon: <HardDrive />
+  },
+  {
+    id: 'asic-basic',
+    name: 'Entry ASIC Miner',
+    type: 'ASIC',
+    hashrate: 100,
+    power: 1500,
+    price: 2000,
+    efficiency: 0.067,
+    level: 0,
+    maxLevel: 15,
+    icon: <Chip />
+  }
+];
+
+// Default upgrades with icons
+const getDefaultUpgrades = (): Upgrade[] => [
+  {
+    id: 'cooling',
+    name: 'Advanced Cooling',
+    description: 'Reduce power consumption by 10%',
+    cost: 200,
+    effect: { type: 'power', value: -0.1 },
+    applied: false,
+    icon: <Droplets />
+  },
+  {
+    id: 'overclock',
+    name: 'Overclocking',
+    description: 'Increase hashrate by 15%',
+    cost: 350,
+    effect: { type: 'hashrate', value: 0.15 },
+    applied: false,
+    icon: <Gauge />
+  },
+  {
+    id: 'efficiency',
+    name: 'Power Optimization',
+    description: 'Improve efficiency by 20%',
+    cost: 500,
+    effect: { type: 'efficiency', value: 0.2 },
+    applied: false,
+    icon: <Lightbulb />
+  },
+  {
+    id: 'luck',
+    name: 'Lucky Algorithm',
+    description: 'Increase mining rewards by 25%',
+    cost: 750,
+    effect: { type: 'luck', value: 0.25 },
+    applied: false,
+    icon: <Sparkles />
+  },
+  {
+    id: 'thermal',
+    name: 'Thermal Compound',
+    description: 'Reduce power consumption by 5%',
+    cost: 150,
+    effect: { type: 'power', value: -0.05 },
+    applied: false,
+    icon: <Thermometer />
+  },
+  {
+    id: 'fans',
+    name: 'High-RPM Fans',
+    description: 'Increase hashrate by 8%',
+    cost: 250,
+    effect: { type: 'hashrate', value: 0.08 },
+    applied: false,
+    icon: <Fan />
+  }
+];
+
+// Default achievements with icons
+const getDefaultAchievements = (): Achievement[] => [
+  {
+    id: 'first-coin',
+    name: 'First Coin',
+    description: 'Mine your first AVI token',
+    requirement: 1,
+    type: 'mined',
+    unlocked: false,
+    reward: 10,
+    icon: <Coins />
+  },
+  {
+    id: 'hundred-coins',
+    name: 'Hundred Club',
+    description: 'Mine 100 AVI tokens',
+    requirement: 100,
+    type: 'mined',
+    unlocked: false,
+    reward: 50,
+    icon: <Layers />
+  },
+  {
+    id: 'hashrate-50',
+    name: 'Power Miner',
+    description: 'Reach 50 H/s hashrate',
+    requirement: 50,
+    type: 'hashrate',
+    unlocked: false,
+    reward: 100,
+    icon: <Bolt />
+  },
+  {
+    id: 'first-upgrade',
+    name: 'Upgrader',
+    description: 'Purchase your first upgrade',
+    requirement: 1,
+    type: 'upgrades',
+    unlocked: false,
+    reward: 25,
+    icon: <Cog />
+  },
+  {
+    id: 'efficiency-master',
+    name: 'Efficiency Master',
+    description: 'Reach 0.5 efficiency',
+    requirement: 0.5,
+    type: 'efficiency',
+    unlocked: false,
+    reward: 150,
+    icon: <Zap />
+  }
+];
+
 const Mining: React.FC = () => {
-  // Default hardware configurations with icons
-  const getDefaultHardware = (): MiningHardware[] => [
-    {
-      id: 'cpu-basic',
-      name: 'Basic CPU Miner',
-      type: 'CPU',
-      hashrate: 0.5,
-      power: 65,
-      price: 0,
-      efficiency: 0.0077,
-      level: 1,
-      maxLevel: 5,
-      icon: <Cpu />
-    },
-    {
-      id: 'gpu-basic',
-      name: 'Basic GPU Rig',
-      type: 'GPU',
-      hashrate: 30,
-      power: 150,
-      price: 500,
-      efficiency: 0.2,
-      level: 0,
-      maxLevel: 10,
-      icon: <HardDrive />
-    },
-    {
-      id: 'asic-basic',
-      name: 'Entry ASIC Miner',
-      type: 'ASIC',
-      hashrate: 100,
-      power: 1500,
-      price: 2000,
-      efficiency: 0.067,
-      level: 0,
-      maxLevel: 15,
-      icon: <Chip />
-    }
-  ];
-
-  // Default upgrades with icons
-  const getDefaultUpgrades = (): Upgrade[] => [
-    {
-      id: 'cooling',
-      name: 'Advanced Cooling',
-      description: 'Reduce power consumption by 10%',
-      cost: 200,
-      effect: { type: 'power', value: -0.1 },
-      applied: false,
-      icon: <Droplets />
-    },
-    {
-      id: 'overclock',
-      name: 'Overclocking',
-      description: 'Increase hashrate by 15%',
-      cost: 350,
-      effect: { type: 'hashrate', value: 0.15 },
-      applied: false,
-      icon: <Gauge />
-    },
-    {
-      id: 'efficiency',
-      name: 'Power Optimization',
-      description: 'Improve efficiency by 20%',
-      cost: 500,
-      effect: { type: 'efficiency', value: 0.2 },
-      applied: false,
-      icon: <Lightbulb />
-    },
-    {
-      id: 'luck',
-      name: 'Lucky Algorithm',
-      description: 'Increase mining rewards by 25%',
-      cost: 750,
-      effect: { type: 'luck', value: 0.25 },
-      applied: false,
-      icon: <Sparkles />
-    },
-    {
-      id: 'thermal',
-      name: 'Thermal Compound',
-      description: 'Reduce power consumption by 5%',
-      cost: 150,
-      effect: { type: 'power', value: -0.05 },
-      applied: false,
-      icon: <Thermometer />
-    },
-    {
-      id: 'fans',
-      name: 'High-RPM Fans',
-      description: 'Increase hashrate by 8%',
-      cost: 250,
-      effect: { type: 'hashrate', value: 0.08 },
-      applied: false,
-      icon: <Fan />
-    }
-  ];
-
-  // Default achievements with icons
-  const getDefaultAchievements = (): Achievement[] => [
-    {
-      id: 'first-coin',
-      name: 'First Coin',
-      description: 'Mine your first AVI token',
-      requirement: 1,
-      type: 'mined',
-      unlocked: false,
-      reward: 10,
-      icon: <Coins />
-    },
-    {
-      id: 'hundred-coins',
-      name: 'Hundred Club',
-      description: 'Mine 100 AVI tokens',
-      requirement: 100,
-      type: 'mined',
-      unlocked: false,
-      reward: 50,
-      icon: <Layers />
-    },
-    {
-      id: 'hashrate-50',
-      name: 'Power Miner',
-      description: 'Reach 50 H/s hashrate',
-      requirement: 50,
-      type: 'hashrate',
-      unlocked: false,
-      reward: 100,
-      icon: <Bolt />
-    },
-    {
-      id: 'first-upgrade',
-      name: 'Upgrader',
-      description: 'Purchase your first upgrade',
-      requirement: 1,
-      type: 'upgrades',
-      unlocked: false,
-      reward: 25,
-      icon: <Cog />
-    },
-    {
-      id: 'efficiency-master',
-      name: 'Efficiency Master',
-      description: 'Reach 0.5 efficiency',
-      requirement: 0.5,
-      type: 'efficiency',
-      unlocked: false,
-      reward: 150,
-      icon: <Zap />
-    }
-  ];
-
   // Mining hardware options
   const [hardware, setHardware] = useState<MiningHardware[]>(getDefaultHardware());
 
@@ -904,10 +904,10 @@ const Mining: React.FC = () => {
         <TabsContent value="achievements">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {achievements.map(achievement => (
-              <Card key={achievement.id} className={achievement.unlocked ? 'border-yellow-500' : ''}>
+              <Card key={achievement.id} className={achievement.unlocked ? 'border-green-500' : ''}>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <span className={`p-1.5 rounded-full ${achievement.unlocked ? 'bg-yellow-500 text-white' : 'bg-muted'}`}>
+                    <span className={`p-1.5 rounded-full ${achievement.unlocked ? 'bg-green-500 text-white' : 'bg-muted'}`}>
                       {achievement.icon}
                     </span>
                     {achievement.name}
@@ -937,14 +937,14 @@ const Mining: React.FC = () => {
                     />
                     
                     <div className="flex items-center gap-1 text-sm">
-                      <Coins className="h-4 w-4 text-yellow-500" />
+                      <Coins className="h-4 w-4 text-green-500" />
                       <span>Reward: {achievement.reward} AVI</span>
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter>
                   {achievement.unlocked ? (
-                    <Badge className="w-full justify-center py-2 bg-yellow-500">
+                    <Badge className="w-full justify-center py-2 bg-green-500">
                       Unlocked
                     </Badge>
                   ) : (
@@ -986,8 +986,8 @@ const Mining: React.FC = () => {
               {achievements.filter(a => a.unlocked).map((achievement, index) => (
                 <div key={achievement.id} className="flex items-center justify-between p-3 border rounded-md">
                   <div className="flex items-center gap-3">
-                    <div className="bg-yellow-500/20 p-2 rounded-full">
-                      <Trophy className="h-4 w-4 text-yellow-500" />
+                    <div className="bg-green-500/20 p-2 rounded-full">
+                      <Trophy className="h-4 w-4 text-green-500" />
                     </div>
                     <div>
                       <div className="font-medium">Achievement Unlocked: {achievement.name}</div>
@@ -1001,8 +1001,8 @@ const Mining: React.FC = () => {
               {upgrades.filter(u => u.applied).map((upgrade, index) => (
                 <div key={upgrade.id} className="flex items-center justify-between p-3 border rounded-md">
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-500/20 p-2 rounded-full">
-                      <Cog className="h-4 w-4 text-blue-500" />
+                    <div className="bg-green-500/20 p-2 rounded-full">
+                      <Cog className="h-4 w-4 text-green-500" />
                     </div>
                     <div>
                       <div className="font-medium">Upgrade Applied: {upgrade.name}</div>
@@ -1047,7 +1047,7 @@ const Mining: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              <Lightbulb className="h-5 w-5 text-green-500" />
               Mining Tips
             </CardTitle>
           </CardHeader>
@@ -1075,7 +1075,7 @@ const Mining: React.FC = () => {
               
               <div className="p-4 border rounded-md">
                 <h3 className="font-medium flex items-center gap-2 mb-2">
-                  <Trophy className="h-4 w-4 text-yellow-500" />
+                  <Trophy className="h-4 w-4 text-green-500" />
                   Achievements
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -1085,7 +1085,7 @@ const Mining: React.FC = () => {
               
               <div className="p-4 border rounded-md">
                 <h3 className="font-medium flex items-center gap-2 mb-2">
-                  <Gem className="h-4 w-4 text-blue-500" />
+                  <Gem className="h-4 w-4 text-green-500" />
                   Advanced Mining
                 </h3>
                 <p className="text-sm text-muted-foreground">

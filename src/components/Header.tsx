@@ -53,7 +53,7 @@ const Header = ({ onTrackWallet }: HeaderProps) => {
   return (
     <header className="fixed top-0 left-0 w-full z-30 bg-background/80 backdrop-blur-md shadow-md flex items-center justify-between px-6 py-3 draggable-area" style={{ WebkitAppRegion: 'drag', appRegion: 'drag' }}>
       <div className="flex items-center gap-4 w-full">
-        <img src="/Avilasha.svg" alt="Logo" className="w-9 h-9 rounded-full shadow-lg no-drag" style={{ WebkitAppRegion: 'no-drag', appRegion: 'no-drag' }} />
+        <img src="/Avilasha copy.png" alt="Logo" className="w-9 h-9 rounded-full shadow-lg no-drag" style={{ WebkitAppRegion: 'no-drag', appRegion: 'no-drag' }} />
         <div className={`relative w-80 transition-all duration-200 ease-in-out ${isSearchFocused ? 'scale-105' : ''}`}>
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search className="h-4 w-4 text-muted-foreground" />

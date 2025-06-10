@@ -82,6 +82,18 @@ export default {
 					bnb: '#F0B90B',
 					other: '#10B981',
 				},
+				green: {
+					50: '#f0fdf4',
+					100: '#dcfce7',
+					200: '#bbf7d0',
+					300: '#86efac',
+					400: '#4ade80',
+					500: '#22c55e',
+					600: '#16a34a',
+					700: '#15803d',
+					800: '#166534',
+					900: '#14532d',
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -142,9 +154,9 @@ export default {
 				'gold-shimmer': 'gold-shimmer 3s ease infinite',
 			},
 			backgroundImage: {
-				'gold-gradient': 'linear-gradient(45deg, #d4af37, #f9f295, #d4af37)',
-				'luxury-gradient': 'linear-gradient(to right, hsl(36, 100%, 50%), hsl(36, 100%, 65%), hsl(36, 100%, 50%))',
-				'royal-gradient': 'linear-gradient(to right, hsl(263, 70%, 50%), hsl(263, 70%, 65%), hsl(263, 70%, 50%))'
+				'gold-gradient': 'linear-gradient(45deg, #22c55e, #4ade80, #22c55e)',
+				'luxury-gradient': 'linear-gradient(to right, hsl(142, 76%, 36%), hsl(142, 76%, 45%), hsl(142, 76%, 36%))',
+				'royal-gradient': 'linear-gradient(to right, hsl(142, 76%, 36%), hsl(142, 76%, 45%), hsl(142, 76%, 36%))'
 			}
 		}
 	},

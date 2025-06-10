@@ -49,7 +49,7 @@ const Sidebar = () => {
     <aside className={`fixed top-0 left-0 z-40 h-screen ${collapsed ? 'w-16' : 'w-60'} pt-16 pb-4 bg-sidebar border-r border-border transition-all duration-300`}>
       <div className="flex flex-col h-full px-3 py-4">
         <Button 
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 transition-opacity mb-6"
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-green-500 hover:opacity-90 transition-opacity mb-6"
           onClick={() => {/* trigger add wallet modal */}}
         >
           <Plus size={18} />

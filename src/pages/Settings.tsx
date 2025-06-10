@@ -20,6 +20,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
+  // Define functions at the top of the component to avoid reference errors
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setProfile({ ...profile, [id]: value });

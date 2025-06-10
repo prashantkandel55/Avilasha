@@ -10,6 +10,7 @@ import NotificationBell from '@/components/NotificationBell';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SplashCursor } from '@/components/ui/splash-cursor';
+import CryptoTickerBar from '@/components/CryptoTickerBar';
 
 const MainLayout = () => {
   const [trackWalletOpen, setTrackWalletOpen] = useState(false);
@@ -75,6 +76,7 @@ const MainLayout = () => {
     <NotificationProvider>
       <div className="min-h-screen bg-background">
         {showSplashCursor && <SplashCursor />}
+        <CryptoTickerBar />
         <Header onTrackWallet={() => setTrackWalletOpen(true)} />
         <div className="absolute top-3 right-8 z-50 flex items-center gap-2">
           <ThemeSwitcher />

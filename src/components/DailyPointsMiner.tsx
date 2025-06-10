@@ -5,7 +5,7 @@ const LAST_MINED_KEY = 'last_mined_timestamp';
 const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const confettiColors = [
-  '#FFD700', '#FF8C00', '#FF69B4', '#00BFFF', '#7CFC00', '#FF4500', '#40E0D0', '#9B30FF'
+  '#22c55e', '#16a34a', '#4ade80', '#86efac', '#bbf7d0'
 ];
 
 const getRandomColor = () => confettiColors[Math.floor(Math.random() * confettiColors.length)];
@@ -92,18 +92,18 @@ const DailyPointsMiner: React.FC = () => {
   );
 
   return (
-    <div className="relative overflow-hidden rounded-xl border-2 border-yellow-400 bg-gradient-to-tr from-yellow-100 via-yellow-50 to-yellow-300 shadow-lg p-6 mb-6 flex flex-col items-center gap-2">
+    <div className="relative overflow-hidden rounded-xl border-2 border-green-400 bg-gradient-to-tr from-green-100 via-green-50 to-green-300 shadow-lg p-6 mb-6 flex flex-col items-center gap-2">
       {showConfetti && <Confetti />}
       <div className="flex items-center gap-2 mb-2">
         <span className="text-3xl">⛏️</span>
-        <h2 className="text-xl font-extrabold bg-gradient-to-r from-yellow-500 via-orange-400 to-pink-400 bg-clip-text text-transparent drop-shadow">Mine Daily Points</h2>
+        <h2 className="text-xl font-extrabold bg-gradient-to-r from-green-500 via-green-400 to-green-500 bg-clip-text text-transparent drop-shadow">Mine Daily Points</h2>
       </div>
-      <div className="mb-2 text-lg font-semibold text-yellow-700 flex items-center gap-2">
+      <div className="mb-2 text-lg font-semibold text-green-700 flex items-center gap-2">
         <span className="inline-block animate-bounce">⭐</span>
-        Current Points: <span className="font-extrabold text-yellow-900 text-2xl drop-shadow">{points}</span>
+        Current Points: <span className="font-extrabold text-green-900 text-2xl drop-shadow">{points}</span>
       </div>
       <button
-        className={`relative px-8 py-3 mt-2 rounded-full text-lg font-bold shadow-xl transition bg-gradient-to-r from-yellow-400 via-orange-300 to-pink-300 hover:scale-105 hover:from-yellow-500 hover:to-pink-400 focus:outline-none focus:ring-4 focus:ring-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed`}
+        className={`relative px-8 py-3 mt-2 rounded-full text-lg font-bold shadow-xl transition bg-gradient-to-r from-green-400 via-green-300 to-green-400 hover:scale-105 hover:from-green-500 hover:to-green-400 focus:outline-none focus:ring-4 focus:ring-green-300 disabled:opacity-60 disabled:cursor-not-allowed`}
         onClick={handleMine}
         disabled={cooldown > 0}
         aria-disabled={cooldown > 0}

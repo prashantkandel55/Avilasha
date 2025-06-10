@@ -106,7 +106,8 @@ const CoolFeatures: React.FC<CoolFeaturesProps> = ({ userName = 'Crypto Enthusia
       confetti({
         particleCount: 100,
         spread: 70,
-        origin: { y: 0.6 }
+        origin: { y: 0.6 },
+        colors: ['#22c55e', '#16a34a', '#4ade80'] // Green colors
       });
     }
     
@@ -118,7 +119,7 @@ const CoolFeatures: React.FC<CoolFeaturesProps> = ({ userName = 'Crypto Enthusia
       <Card className="overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-background to-primary/5">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-yellow-500" />
+            <Sparkles className="h-5 w-5 text-green-500" />
             Cool Features
           </CardTitle>
         </CardHeader>
@@ -127,7 +128,7 @@ const CoolFeatures: React.FC<CoolFeaturesProps> = ({ userName = 'Crypto Enthusia
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="font-semibold flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-yellow-500" />
+                  <Trophy className="h-4 w-4 text-green-500" />
                   Your Points
                 </h3>
                 <p className="text-sm text-muted-foreground">Earn rewards and unlock features</p>
@@ -138,14 +139,14 @@ const CoolFeatures: React.FC<CoolFeaturesProps> = ({ userName = 'Crypto Enthusia
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="font-semibold flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-orange-500" />
+                  <Flame className="h-4 w-4 text-green-500" />
                   Daily Streak
                 </h3>
                 <p className="text-sm text-muted-foreground">Current streak: {streak} days</p>
               </div>
               <Button 
                 onClick={handleDailyReward}
-                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700"
+                className="bg-gradient-to-r from-primary to-green-600 hover:from-primary/90 hover:to-green-700"
               >
                 <Gift className="mr-2 h-4 w-4" />
                 Claim Daily
@@ -154,20 +155,20 @@ const CoolFeatures: React.FC<CoolFeaturesProps> = ({ userName = 'Crypto Enthusia
             
             <div>
               <h3 className="font-semibold flex items-center gap-2 mb-2">
-                <Star className="h-4 w-4 text-yellow-500" />
+                <Star className="h-4 w-4 text-green-500" />
                 Achievements
               </h3>
               <div className="flex flex-wrap gap-2">
-                <Badge variant={achievements.includes('3-day-streak') ? 'default' : 'outline'} className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                <Badge variant={achievements.includes('3-day-streak') ? 'default' : 'outline'} className="bg-gradient-to-r from-green-500 to-green-600 text-white">
                   3-Day Streak
                 </Badge>
-                <Badge variant={achievements.includes('7-day-streak') ? 'default' : 'outline'} className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+                <Badge variant={achievements.includes('7-day-streak') ? 'default' : 'outline'} className="bg-gradient-to-r from-green-500 to-green-600 text-white">
                   7-Day Streak
                 </Badge>
-                <Badge variant={achievements.includes('1000-points') ? 'default' : 'outline'} className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                <Badge variant={achievements.includes('1000-points') ? 'default' : 'outline'} className="bg-gradient-to-r from-green-500 to-green-600 text-white">
                   1000 Points
                 </Badge>
-                <Badge variant={achievements.includes('first-transaction') ? 'default' : 'outline'} className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white">
+                <Badge variant={achievements.includes('first-transaction') ? 'default' : 'outline'} className="bg-gradient-to-r from-green-500 to-green-600 text-white">
                   First Transaction
                 </Badge>
               </div>
@@ -175,7 +176,7 @@ const CoolFeatures: React.FC<CoolFeaturesProps> = ({ userName = 'Crypto Enthusia
             
             <div>
               <h3 className="font-semibold flex items-center gap-2 mb-2">
-                <Rocket className="h-4 w-4 text-blue-500" />
+                <Rocket className="h-4 w-4 text-green-500" />
                 Upcoming Features
               </h3>
               <div className="text-sm text-muted-foreground space-y-1">
@@ -184,11 +185,11 @@ const CoolFeatures: React.FC<CoolFeaturesProps> = ({ userName = 'Crypto Enthusia
                   <span>AI-powered trading signals</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Zap className="h-3 w-3 text-yellow-500" />
+                  <Zap className="h-3 w-3 text-green-500" />
                   <span>Instant cross-chain swaps</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Gift className="h-3 w-3 text-purple-500" />
+                  <Gift className="h-3 w-3 text-green-500" />
                   <span>Exclusive NFT airdrops</span>
                 </div>
               </div>
@@ -213,7 +214,7 @@ const CoolFeatures: React.FC<CoolFeaturesProps> = ({ userName = 'Crypto Enthusia
               animate={{ rotate: 0 }}
               transition={{ type: "spring", stiffness: 200, damping: 10 }}
             >
-              <h2 className="text-2xl font-bold mb-2 text-gradient bg-gradient-to-r from-primary to-purple-600">Daily Reward Claimed!</h2>
+              <h2 className="text-2xl font-bold mb-2 text-gradient bg-gradient-to-r from-primary to-green-600">Daily Reward Claimed!</h2>
               <p className="mb-4">You earned <span className="font-bold text-primary">{50 + Math.min(streak * 10, 100)}</span> points</p>
               <div className="text-5xl mb-4">🎁</div>
               <p className="text-sm text-muted-foreground mb-4">Current streak: {streak} days</p>

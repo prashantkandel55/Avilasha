@@ -76,7 +76,13 @@ const MainLayout = () => {
     <NotificationProvider>
       <div className="min-h-screen bg-background">
         {showSplashCursor && <SplashCursor />}
-        <CryptoTickerBar />
+        <div className="flex items-center bg-black">
+          <div className="flex items-center py-1 px-4">
+            <img src="/Avilasha copy.png" alt="Avilasha Logo" className="h-8 w-8 mr-2" />
+            <span className="text-white font-bold text-lg">Avilasha</span>
+          </div>
+          <CryptoTickerBar />
+        </div>
         <Header onTrackWallet={() => setTrackWalletOpen(true)} />
         <div className="absolute top-3 right-8 z-50 flex items-center gap-2">
           <ThemeSwitcher />
